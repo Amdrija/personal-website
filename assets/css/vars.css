@@ -1,0 +1,12 @@
+:root {
+    --light: #FCFAFF;
+    --dark: #070707;
+    --dark-gray: #222222;
+    --light-gray: #cbd5e1;
+    --gradient: linear-gradient(45deg, #2D4DE0, #9F71F0 30%, #FC6277 60%, #F8EF6F 95%);
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-sans: 'IBM Plex Sans', sans-serif;
+    --font-size: 18px;
+    --text-color: var(--light);
+    --background-color: var(--dark);
+}
