@@ -3,6 +3,7 @@ nav {
     position: fixed;
     top: 0;
     background: var(--background-color);
+    z-index: 9999;
 }
 
 .nav {
@@ -56,19 +57,18 @@ nav {
 .burger-menu {
     padding: var(--container-padding);
     display: none;
-    z-index: 9999;
 }
 
 .burger-menu svg {
     display: block;
-    width: 2rem;
-    height: 2rem;
+    width: var(--burger-size);
+    height: var(--burger-size);
     cursor: pointer;
 }
 
 
 header {
-    margin-bottom: calc(var(--container-padding-vertical) + var(--container-padding-vertical) + 2rem);
+    margin-bottom: calc(var(--container-padding-vertical) + var(--container-padding-vertical) + var(--burger-size));
 }
 
 @media screen and (max-width: 768px) {
@@ -94,8 +94,8 @@ header {
     .nav.active {
         padding: var(--container-padding);
         visibility: visible;
-        max-height: calc(100vh - var(--container-padding-vertical) - var(--container-padding-vertical) - 2rem);
-        height: calc(100vh - var(--container-padding-vertical) - var(--container-padding-vertical) - 2rem);
+        max-height: calc(100vh - var(--container-padding-vertical) - var(--container-padding-vertical) - var(--burger-size));
+        height: calc(100vh - var(--container-padding-vertical) - var(--container-padding-vertical) - var(--burger-size));
     }
 
     .nav ul li {

@@ -1,0 +1,30 @@
+.hero {
+    width: 100%;
+    min-height: var(--section-full-height);
+    display: flex;
+    flex-wrap: nowrap;
+}
+
+.hero-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 3 3 60%;
+}
+
+.hero-image {
+    width: 100%;
+    flex: 2 2 40%;
+    display: flex;
+    align-items: center;
+}
+
+@media screen and (max-width: 768px) {
+    .hero {
+        flex-wrap: wrap;
+    }
+
+    .hero-text {
+        margin-bottom: var(--paragraph-margin);
+    }
+}

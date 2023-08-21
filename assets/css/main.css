@@ -2,6 +2,7 @@
 @import "fonts";
 @import "vars";
 @import "header";
+@import "hero";
 
 body {
     font-family: var(--font-body);
@@ -18,14 +19,17 @@ h1, h2, h3 {
 
 h1 {
     font-size: 2.67rem;
+    margin-bottom: var(--paragraph-margin);
 }
 
 h2 {
     font-size: 2.22rem;
+    margin-bottom: var(--paragraph-margin);
 }
 
 h3 {
     font-size: 1.78rem;
+    margin-bottom: var(--paragraph-margin);
 }
 
 h4 {
@@ -35,6 +39,7 @@ h4 {
 
 p {
     line-height: 1.7rem;
+    margin-bottom: var(--paragraph-margin);
 }
 
 a {
@@ -49,7 +54,52 @@ a:hover {
     text-decoration: underline;
 }
 
+section {
+    margin-bottom: var(--section-margin);
+}
+
+
+
 .container {
     padding: var(--container-padding);
 }
 
+button {
+    cursor: pointer;
+}
+
+.button-primary {
+    position: relative;
+    padding: 1rem;
+    font-family: var(--font-headings);
+    border-radius: var(--border-radius);
+}
+
+.button-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--background-color);
+    z-index: -1;
+    border-radius: var(--border-radius);
+    transition: background-color 0.3s;
+}
+
+.button-primary::after {
+    content: '';
+    z-index: -2;
+    position: absolute;
+    top: calc(-1 * var(--border-width));
+    bottom: calc(-1 * var(--border-width));
+    left: calc(-1 * var(--border-width));
+    right: calc(-1 * var(--border-width));
+    background: var(--gradient);
+    border-radius: var(--border-radius);
+}
+
+.button-primary:hover.button-primary::before{
+    background-color: transparent;
+}
