@@ -1,0 +1,111 @@
+nav {
+    width: 100%;
+    position: fixed;
+    top: 0;
+    background: var(--background-color);
+}
+
+.nav {
+    width: 100%;
+    padding: var(--container-padding);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filler {
+    width: 100%;
+    
+}
+
+.nav div {
+    flex-grow: 0;
+}
+
+.nav ul li {
+    display: inline;
+    padding-right: 2rem;
+    font-family: var(--font-headings);
+    font-weight: 500;
+}
+
+.nav ul li a:before {
+    content: '';
+    width: 0%;
+    height: 3px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -6px;
+    transition: width 0.3s;
+    background-color: var(--font-color);
+}
+
+.nav a:hover {
+    text-decoration: none;
+}
+
+.nav ul li a:hover:before {
+    width: 100%;
+}
+
+.devicon-github-original {
+    font-size: 2rem;
+}
+
+.burger-menu {
+    padding: var(--container-padding);
+    display: none;
+    z-index: 9999;
+}
+
+.burger-menu svg {
+    display: block;
+    width: 2rem;
+    height: 2rem;
+    cursor: pointer;
+}
+
+
+header {
+    margin-bottom: calc(var(--container-padding-vertical) + var(--container-padding-vertical) + 2rem);
+}
+
+@media screen and (max-width: 768px) {
+    .nav {
+        /* display: none; */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 0;
+        visibility: hidden;
+        transition: max-height 0.3s;
+        max-height: 0;
+        overflow: hidden;
+    }
+    
+    /* nav:hover .nav {
+        padding: var(--container-padding);
+        visibility: visible;
+        max-height: calc(100vh - var(--container-padding-vertical) - var(--container-padding-vertical) - 2rem);
+        height: calc(100vh - var(--container-padding-vertical) - var(--container-padding-vertical) - 2rem);
+    } */
+
+    .nav.active {
+        padding: var(--container-padding);
+        visibility: visible;
+        max-height: calc(100vh - var(--container-padding-vertical) - var(--container-padding-vertical) - 2rem);
+        height: calc(100vh - var(--container-padding-vertical) - var(--container-padding-vertical) - 2rem);
+    }
+
+    .nav ul li {
+        display: block;
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .burger-menu {
+        display: block;
+    }
+}
+

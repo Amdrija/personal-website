@@ -1,0 +1,32 @@
+<header>
+    {{ with resources.Get "js/header.js" | minify }}
+    <script src="{{ .RelPermalink }}"></script>
+    {{ end }}
+    <nav>
+        <div class="burger-menu">
+            <svg id="burger" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="feather feather-menu">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </div>
+        <div class="nav" id="nav">
+            <div>
+                <ul>
+                    <li><a>Projects</a></li>
+                    <li><a>About</a></li>
+                    <li><a>Blog</a></li>
+                    <li><a>Contact</a></li>
+                </ul>
+            </div>
+            <div>
+                <a href="https://github.com/Amdrija" target="_blank">
+                    <i class="devicon-github-original"></i>
+                </a>
+            </div>
+        </div>
+
+    </nav>
+</header>

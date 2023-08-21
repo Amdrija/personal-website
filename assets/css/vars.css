@@ -7,6 +7,25 @@
     --font-mono: 'IBM Plex Mono', monospace;
     --font-sans: 'IBM Plex Sans', sans-serif;
     --font-size: 18px;
-    --text-color: var(--light);
+    --font-headings: var(--font-mono);
+    --font-body: var(--font-sans);
+    --font-color: var(--light);
     --background-color: var(--dark);
+    --container-padding-horizontal: 5rem;
+    --container-padding-vertical: 2rem;
+    --container-padding: var(--container-padding-vertical) var(--container-padding-horizontal);
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --font-color: var(--dark);
+        --background-color: var(--light);
+    }
+}
+
+@media screen and (max-width: 768px) {
+    :root {
+        --container-padding-horizontal: 1rem;
+        --container-padding-vertical: 1rem;
+    }
 }
