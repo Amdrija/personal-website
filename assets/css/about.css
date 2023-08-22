@@ -13,10 +13,6 @@
     padding-left: 1rem;
 }
 
-.about-work > :not(:last-child) {
-    margin-bottom: var(--paragraph-margin);
-}
-
 .about-work::after {
     position: absolute;
     top: calc(2 * var(--border-width));
@@ -27,6 +23,24 @@
     z-index: -1;
     background: var(--gradient-top-to-bot);
     border-radius: var(--border-radius);
+}
+
+.about-work > :not(:last-child) {
+    margin-bottom: var(--paragraph-margin);
+}
+
+.about-text svg {
+    stroke: var(--font-color);
+}
+
+.cv-container * {
+    display: inline-block;
+    margin-bottom: 0;
+}
+
+.cv-container a:hover {
+    text-decoration: none;
+    border-bottom: 1px solid var(--font-color);
 }
 
 @media screen and (max-width: 768px) {
