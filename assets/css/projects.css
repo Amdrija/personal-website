@@ -48,7 +48,7 @@
 
 .project-technologies li{
     display: inline-block;
-    padding: 0.5rem;
+    padding: 0.5rem 1rem;
     border-radius: var(--border-radius);
     background-color: var(--background-color);
     font-family: var(--font-headings);
