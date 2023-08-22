@@ -56,29 +56,7 @@
             <h2>Projects</h2>
             <div class="projects-container">
                 {{ range (where site.RegularPages "Section" "projects" | first 3)}}
-
-                <div class="project">
-                    {{ with .Resources.GetMatch "cover.*"}}
-                    {{ with .Resize "x600"}}
-                    <img src="{{ .RelPermalink }}">
-                    {{ end }}
-                    {{ end }}
-                    <div class="project-body">
-                        <h3>{{ .Params.title }}</h3>
-                        <p>{{ .Params.summary }}</p>
-                        <ul class="project-technologies">
-                            {{ range .Params.technologies }}
-                            <li>{{.}}</li>
-                            {{ end }}
-                        </ul>
-                        <div class="project-links">
-                            <a href="{{ .Params.github}}" target="_blank">GitHub 🡕</a>
-                            {{ if isset .Params "livelink"}}
-                            <a href="{{ .Params.livelink}}" target="_blank">Live 🡕</a>
-                            {{end}}
-                        </div>
-                    </div>
-                </div>
+                {{ partial "project.html" . }}
                 {{ end }}
             </div>
         </section>
