@@ -17,6 +17,30 @@
     {{ partial "header.html" }}
     <main class="container">
         {{ partial "hero.html"}}
+        <section class="about" id="about">
+            <div class="about-text">
+                <h2>About</h2>
+                <p>I had learned to code when I was 11 years old, in Turbo Pascal (yes, the blue
+                    screen IDE without syntax highlighting, good times). Right now, you are probably thinking that I was
+                    a child prodigy, destined to be a 1337x programmer, but I didn’t really see myself that way. Back
+                    then, I hated going to school, just as most of the kids did. I looked for every opportunity not to
+                    attend classes. In my elementary school, if you went to competitions, you could miss classes in
+                    order to “prepare” for the competitions. Naturally, I went to as many such competitions as I could.
+                    Therefore, I would occasionally miss classes to prepare, while, in reality, I would just stay home
+                    and play League of Legends. Programming came in handy, as I seemed to be good at it, so my professor
+                    started preparing me to attend competitions.</p>
+                <a href="pdfs/Andrija_Jelenkovic_CV.pdf" download="">
+                    <h2>CV ↓</h2>
+                </a>
+            </div>
+            <div class="about-work">
+                {{ range (sort ( where site.RegularPages "Section" "company" | first 3 ) ".Params.startDate"
+                "desc")
+                }}
+                {{ partial "company.html" .Params}}
+                {{ end }}
+            </div>
+        </section>
         <h1>Hero</h1>
         <h2>Section Heading</h2>
         <h3>Heading</h3>

@@ -3,6 +3,11 @@
 @import "vars";
 @import "header";
 @import "hero";
+@import "about";
+
+html {
+    scroll-behavior: smooth;
+}
 
 body {
     font-family: var(--font-body);
@@ -55,10 +60,12 @@ a:hover {
 }
 
 section {
-    margin-bottom: var(--section-margin);
+    padding-top: var(--nav-height);
 }
 
-
+ul {
+    list-style: inside;
+}
 
 .container {
     padding: var(--container-padding);

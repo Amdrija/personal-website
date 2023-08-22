@@ -3,6 +3,7 @@
     min-height: var(--section-full-height);
     display: flex;
     flex-wrap: nowrap;
+    margin-top: calc(-1 * var(--nav-height));
 }
 
 .hero-text {

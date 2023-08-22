@@ -1,0 +1,13 @@
+<div class="company">
+    <div class="title">
+        <h3>{{ .name }}</h3>
+        <h4>{{ time.Format "Jan 2006" .startDate }} - {{ time.Format "Jan 2006"
+            .endDate }}</h4>
+    </div>
+    <h4>{{ .job }}</h4>
+    <ul>
+        {{ range .responsibilities }}
+        <li>{{.}}</li>
+        {{ end }}
+    </ul>
+</div>

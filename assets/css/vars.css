@@ -4,6 +4,7 @@
     --dark-gray: #222222;
     --light-gray: #cbd5e1;
     --gradient: linear-gradient(135deg, #2D4DE0, #9F71F0 30%, #FC6277 60%, #F8EF6F 95%);
+    --gradient-top-to-bot: linear-gradient(180deg,#2D4DE0, #9F71F0 30%, #FC6277 60%, #F8EF6F 95%);
     --font-mono: 'IBM Plex Mono', monospace;
     --font-sans: 'IBM Plex Sans', sans-serif;
     --font-size: 18px;
@@ -15,7 +16,8 @@
     --container-padding-vertical: 2rem;
     --container-padding: var(--container-padding-vertical) var(--container-padding-horizontal);
     --burger-size: 2rem;
-    --full-height-minus-nav: calc(100vh - var(--container-padding-vertical) - var(--container-padding-vertical) - var(--burger-size));
+    --nav-height: calc(var(--container-padding-vertical) + var(--container-padding-vertical) + var(--burger-size));
+    --full-height-minus-nav: calc(100vh - var(--nav-height));
     --section-full-height: calc(var(--full-height-minus-nav) - var(--container-padding-vertical));
     --border-width: 2px;
     --border-radius: 20px;
