@@ -35,6 +35,7 @@
     :root {
         --font-color: var(--dark);
         --background-color: var(--light);
+        --background-gray: var(--light-gray);
     }
 }
 

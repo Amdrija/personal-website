@@ -5,13 +5,15 @@
     {{ end }}
     {{ end }}
     <div class="project-body">
-        <h3>{{ .Params.title }}</h3>
-        <p>{{ .Params.summary }}</p>
-        <ul class="project-technologies">
-            {{ range .Params.technologies }}
-            <li>{{.}}</li>
-            {{ end }}
-        </ul>
+        <div>
+            <h3>{{ .Params.title }}</h3>
+            <p>{{ .Params.summary }}</p>
+            <ul class="project-technologies">
+                {{ range .Params.technologies }}
+                <li>{{.}}</li>
+                {{ end }}
+            </ul>
+        </div>
         <div class="project-links">
             <a href="{{ .Params.github}}" target="_blank">GitHub 🡕</a>
             {{ if isset .Params "livelink"}}

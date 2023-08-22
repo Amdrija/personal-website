@@ -8,6 +8,8 @@
     border-radius: var(--border-radius);
     position: relative;
     background: var(--background-gray);
+    display: flex;
+    flex-direction: column;
 }
 
 .project::after {
@@ -26,10 +28,15 @@
     width: 100%;
     border-top-left-radius: var(--border-radius);
     border-top-right-radius: var(--border-radius);
+    flex: 0 0 auto;
 }
 
 .project-body {
     padding: var(--card-padding);
+    flex: 1 1 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .project-body h3 {
