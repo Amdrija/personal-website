@@ -8,7 +8,6 @@
     border-radius: var(--border-radius);
     position: relative;
     background: var(--background-gray);
-    /* margin-right: var(--paragraph-margin); */
 }
 
 .project::after {
@@ -20,7 +19,7 @@
     background: var(--gradient);
     content: '';
     z-index: -1;
-    border-radius: var(--border-radius);
+    border-radius: var(--gradient-border-radius);
 }
 
 .project img {
@@ -31,6 +30,10 @@
 
 .project-body {
     padding: var(--card-padding);
+}
+
+.project-body h3 {
+    margin-bottom: var(--card-body-margin);
 }
 
 .project-links {
@@ -58,9 +61,7 @@
     }
 
     .project {
-        /* margin-right: 0; */
         flex: 1 1 45%;
-        /* margin-right: 0; */
         margin-bottom: var(--paragraph-margin);
     }
 }

@@ -22,9 +22,13 @@
     --section-full-height: calc(var(--full-height-minus-nav) - var(--container-padding-vertical));
     --border-width: 2px;
     --border-radius: 20px;
+    --gradient-border-radius: calc(var(--border-width) + var(--border-radius));
+    --hover-border-width: 6px;
+    --hopver-gradient-border-radius: calc(var(--hover-border-width) + var(--border-radius));
     --section-margin: 5rem;
     --paragraph-margin: 2rem;
     --card-padding: 2rem;
+    --card-body-margin: 1rem;
 }
 
 @media (prefers-color-scheme: light) {

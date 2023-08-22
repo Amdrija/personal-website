@@ -1,0 +1,70 @@
+.posts-container {
+    display: flex;
+    gap: 5%;
+}
+
+.posts-container a {
+    text-align: left;
+}
+
+.posts-container a:hover {
+    text-decoration: none;
+}
+
+.post {
+    flex: 1 1 30%;
+    border-radius: var(--border-radius);
+    position: relative;
+    background: var(--background-gray);
+    transition: background 0.3s;
+    padding: var(--card-padding);
+}
+
+.post::after {
+    position: absolute;
+    top: calc(-1 * var(--border-width));
+    bottom: calc(-1 * var(--border-width));
+    left: calc(-1 * var(--border-width));
+    right: calc(-1 * var(--border-width));
+    background: var(--gradient);
+    content: '';
+    z-index: -1;
+    border-radius: calc(var(--border-width) + var(--border-radius));
+    transition: all 0.3s;
+}
+
+.post:hover::after {
+    top: calc(-1 * var(--hover-border-width));
+    bottom: calc(-1 * var(--hover-border-width));
+    left: calc(-1 * var(--hover-border-width));
+    right: calc(-1 * var(--hover-border-width));
+    border-radius: calc(var(--hover-border-width) + var(--border-radius));
+}
+
+.post-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--card-body-margin);
+}
+
+.post-title h3 {
+    margin-bottom: 0;
+}
+
+@media screen and (max-width: 1024px) {
+    .posts-container {
+        flex-wrap: wrap;
+    }
+
+    .post {
+        flex: 1 1 45%;
+        margin-bottom: var(--paragraph-margin);
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .post {
+        flex: 1 1 100%;
+    }
+}

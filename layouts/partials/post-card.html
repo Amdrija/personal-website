@@ -1,0 +1,11 @@
+<a href="#">
+    <div class="post">
+        <div class="post-title">
+            <h3>{{ .Params.title }}</h3>
+            <h4 class="post-time">{{ .ReadingTime }}min</h4>
+        </div>
+        <p> {{ .Params.summary }}
+        </p>
+        <h4 class="post-date">{{ time.Format "January 6, 2006" .Params.date }}</h4>
+    </div>
+</a>

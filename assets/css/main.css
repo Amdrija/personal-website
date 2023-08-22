@@ -5,6 +5,7 @@
 @import "hero";
 @import "about";
 @import "projects";
+@import "posts";
 
 html {
     scroll-behavior: smooth;
@@ -105,7 +106,7 @@ button {
     left: calc(-1 * var(--border-width));
     right: calc(-1 * var(--border-width));
     background: var(--gradient);
-    border-radius: var(--border-radius);
+    border-radius: var(--gradient-border-radius);
 }
 
 .button-primary:hover.button-primary::before{
