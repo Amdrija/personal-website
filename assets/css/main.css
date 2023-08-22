@@ -4,6 +4,7 @@
 @import "header";
 @import "hero";
 @import "about";
+@import "projects";
 
 html {
     scroll-behavior: smooth;

@@ -12,6 +12,7 @@
     --font-body: var(--font-sans);
     --font-color: var(--light);
     --background-color: var(--dark);
+    --background-gray: var(--dark-gray);
     --container-padding-horizontal: 5rem;
     --container-padding-vertical: 2rem;
     --container-padding: var(--container-padding-vertical) var(--container-padding-horizontal);
@@ -23,6 +24,7 @@
     --border-radius: 20px;
     --section-margin: 5rem;
     --paragraph-margin: 2rem;
+    --card-padding: 2rem;
 }
 
 @media (prefers-color-scheme: light) {

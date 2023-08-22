@@ -47,6 +47,10 @@
     .about {
         flex-wrap: wrap;
     }
+
+    .about-text {
+        margin-bottom: var(--paragraph-margin);
+    }
 }
 
 /* .company {
