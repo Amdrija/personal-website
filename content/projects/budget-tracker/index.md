@@ -4,10 +4,10 @@
     "technologies": [
         "C#",
         "JavaScript",
-        "HTML",
         "CSS",
-        "React",
-        ".NET"
+        ".NET",
+        "HTML",
+        "React"
     ],
     "date": "2022-07-14T09:00:00+02:00",
     "liveLink": "https://budget.jelenkovic.xyz",
