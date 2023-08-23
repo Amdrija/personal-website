@@ -62,7 +62,7 @@
         </section>
         <section>
             <h2>Blog</h2>
-            <div class="posts-container">
+            <div class="posts-container" id="posts">
                 {{ range where site.RegularPages "Section" "posts" | first 3}}
                 {{partial "post-card.html" .}}
                 {{end}}
