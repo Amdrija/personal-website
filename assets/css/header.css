@@ -76,7 +76,7 @@ header {
         /* display: none; */
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
+        justify-content: center;
         padding: 0;
         visibility: hidden;
         transition: max-height 0.3s;
@@ -84,13 +84,6 @@ header {
         overflow: hidden;
     }
     
-    /* nav:hover .nav {
-        padding: var(--container-padding);
-        visibility: visible;
-        max-height: calc(100vh - var(--container-padding-vertical) - var(--container-padding-vertical) - 2rem);
-        height: calc(100vh - var(--container-padding-vertical) - var(--container-padding-vertical) - 2rem);
-    } */
-
     .nav.active {
         padding: var(--container-padding);
         visibility: visible;
