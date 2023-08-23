@@ -1,0 +1,10 @@
+.page-404 {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.page-404 > * {
+    flex: 0 0 100%;
+    text-align: center;
+}

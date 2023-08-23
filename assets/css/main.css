@@ -7,6 +7,7 @@
 @import "projects";
 @import "posts";
 @import "footer";
+@import "404";
 
 html {
     scroll-behavior: smooth;
