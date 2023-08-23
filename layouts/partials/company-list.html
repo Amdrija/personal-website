@@ -1,0 +1,5 @@
+<div class="about-work">
+    {{ range .companies }}
+    {{ partial "company.html" .Params}}
+    {{ end }}
+</div>

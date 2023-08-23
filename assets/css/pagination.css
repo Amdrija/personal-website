@@ -1,0 +1,7 @@
+.pagination {
+    padding: var(--container-padding);
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 2rem;
+}

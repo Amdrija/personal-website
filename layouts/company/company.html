@@ -1,0 +1,5 @@
+{{ define "main"}}
+<h1>Companies</h1>
+{{partial "company-list.html" (dict "companies" (sort .Pages ".Params.startDate"
+"desc")) }}
+{{ end }}

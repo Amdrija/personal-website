@@ -1,0 +1,13 @@
+<div class="pagination">
+    <a href="{{ .Paginator.First.URL}}">
+        First</a>
+    {{ if .Paginator.HasPrev }}
+    <a href="{{ .Paginator.Prev.URL }}">
+        Previous </a>
+    {{ end}}
+    <p>{{ .Paginator.PageNumber }}</p>
+    {{ if .Paginator.HasNext }}
+    <a href="{{ .Paginator.Next.URL }}"> Next </a>
+    {{ end }}
+    <a href="{{ .Paginator.Last.URL }}"> Last </a>
+</div>

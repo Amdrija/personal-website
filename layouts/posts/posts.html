@@ -1,0 +1,6 @@
+{{ define "main" }}
+<h1>{{ .Title }}</h1>
+{{ .Content }}
+{{ partial "posts-list.html" (dict "posts" .Paginator.Pages )}}
+{{ partial "pagination.html" . }}
+{{ end }}

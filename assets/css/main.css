@@ -8,6 +8,7 @@
 @import "posts";
 @import "footer";
 @import "404";
+@import "pagination";
 
 html {
     scroll-behavior: smooth;
@@ -114,4 +115,12 @@ button {
 
 .button-primary:hover.button-primary::before{
     background-color: transparent;
+}
+
+.section-link {
+    display: block;
+    text-align: right;
+    font-family: var(--font-headings);
+    font-size: 1.2rem;
+    padding-top: 2rem;
 }
