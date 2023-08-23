@@ -19,8 +19,20 @@ nav {
     
 }
 
+#logo, #logo-burger {
+    width: 32px;
+    height: 32px;
+    display: inline-block;
+}
+
 .nav div {
     flex-grow: 0;
+}
+
+.nav ul {
+    display: flex;
+    align-items: center;
+    justify-content: start;
 }
 
 .nav ul li {
@@ -46,6 +58,10 @@ nav {
     text-decoration: none;
 }
 
+#logo:hover:before {
+    width: 0;
+}
+
 .nav ul li a:hover:before {
     width: 100%;
 }
@@ -60,7 +76,7 @@ nav {
 }
 
 .burger-menu svg {
-    display: block;
+    display: inline-block;
     width: var(--burger-size);
     height: var(--burger-size);
     cursor: pointer;
@@ -91,6 +107,14 @@ header {
         height: calc(100vh - var(--container-padding-vertical) - var(--container-padding-vertical) - var(--burger-size));
     }
 
+    .nav ul {
+        display: block;
+    }
+
+    #logo {
+        display: none;
+    }
+
     .nav ul li {
         display: block;
         text-align: center;
@@ -98,7 +122,8 @@ header {
     }
 
     .burger-menu {
-        display: block;
+        display: flex;
+        justify-content: space-between;
     }
 }
 

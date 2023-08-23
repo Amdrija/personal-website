@@ -3,6 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="author" content="Andrija Jelenkovic">
+    <meta name="generator" content="Hugo">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {{ with resources.Get "css/main.css" |toCSS | minify | postCSS }}
     <link rel="stylesheet" href="{{ .RelPermalink }}">
@@ -10,7 +12,14 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.15.1/devicon.min.css">
 
-    <title>Andrija Jelenkovic</title>
+    <meta name="description" content="{{ .Params.summary }}">
+    <meta property="og:description" content="{{ .Params.summary }}">
+    <meta property="og:title" content="{{ .Title }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="{{ .Permalink }}" />
+    <meta property="og:image" content="/images/image-preview.webp" />
+    <meta property="og:locale" content="en_US" />
+    <title>{{ .Title }}</title>
 </head>
 
 <body>

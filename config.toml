@@ -1,4 +1,5 @@
-baseURL = 'http://example.org/'
+baseURL = 'https://jelenkovic.xyz/'
 languageCode = 'en-us'
-title = 'My New Hugo Site'
+title = 'Andrija Jelenkovic'
 paginate = 6
+disableKinds = ['taxonomy', 'term']
