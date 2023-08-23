@@ -1,0 +1,21 @@
+.post-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding-top: 0;
+}
+
+.post-page-header {
+
+    margin-bottom: var(--paragraph-margin);
+}
+
+.post-page-title {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.post-page-title h1 {
+    margin-bottom: 0;
+}

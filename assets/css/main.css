@@ -9,6 +9,7 @@
 @import "footer";
 @import "404";
 @import "pagination";
+@import "post-page";
 
 html {
     scroll-behavior: smooth;

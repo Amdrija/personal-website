@@ -1,0 +1,14 @@
+{{ define "main" }}
+<section class="post-page">
+    <div class="post-page-header">
+        <div class="post-page-title">
+            <h1>{{ .Title }}</h1>
+            <h4>{{ .ReadingTime }}min</h4>
+        </div>
+        {{ if (isset .Params "date")}}
+        <h4>{{ time.Format "January 1, 2006" .Params.date }}</h4>
+        {{end}}
+    </div>
+    {{ .Content }}
+</section>
+{{ end }}
