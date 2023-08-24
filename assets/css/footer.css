@@ -2,3 +2,15 @@ footer {
     text-align: center;
     padding: var(--container-padding);
 }
+
+.social {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: var(--paragraph-margin);
+}
+
+.social i {
+    font-size: 32px;
+}
