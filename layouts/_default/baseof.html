@@ -2,23 +2,29 @@
 <html lang="en">
 
 <head>
+    {{ with resources.Get "css/main.css" |toCSS | postCSS | minify }}
+    <link rel="stylesheet" href="{{ .RelPermalink }}">
+    {{ end }}
     <meta charset="UTF-8">
     <meta name="author" content="Andrija Jelenkovic">
     <meta name="generator" content="Hugo">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {{ with resources.Get "css/main.css" |toCSS | minify | postCSS }}
-    <link rel="stylesheet" href="{{ .RelPermalink }}">
-    {{ end }}
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.15.1/devicon.min.css">
 
     <meta name="description" content="{{ .Params.summary }}">
     <meta property="og:description" content="{{ .Params.summary }}">
     <meta property="og:title" content="{{ .Title }}" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="{{ .Permalink }}" />
-    <meta property="og:image" content="/images/image-preview.webp" />
+
+    {{ with resources.Get "/images/image-preview.png"}}
+    {{ with .Resize "x600 webp"}}
+    <meta property="og:image" content="{{ .RelPermalink}}" />
+    {{ end }}
+    {{ end }}
+
     <meta property="og:locale" content="en_US" />
+
     <title>{{ .Title }}</title>
 </head>
 

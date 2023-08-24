@@ -1,7 +1,7 @@
 <div class="project">
     {{ with .Resources.GetMatch "cover.*"}}
-    {{ with .Resize "x600 webp"}}
-    <img src="{{ .RelPermalink }}">
+    {{ with .Resize "x400 webp"}}
+    <img src="{{ .RelPermalink }}" alt="{{ .Params.title }} project image">
     {{ end }}
     {{ end }}
     <div class="project-body">
