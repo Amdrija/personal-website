@@ -10,6 +10,7 @@
 @import "404";
 @import "pagination";
 @import "post-page";
+@import "dark-mode-toggle";
 
 html {
     scroll-behavior: smooth;
