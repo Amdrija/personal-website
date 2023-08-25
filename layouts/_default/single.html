@@ -6,7 +6,7 @@
             <h4>{{ .ReadingTime }}min</h4>
         </div>
         {{ if (isset .Params "date")}}
-        <h4>{{ time.Format "January 1, 2006" .Params.date }}</h4>
+        <h4>{{ time.Format "January 2, 2006" .Params.date }}</h4>
         {{end}}
     </div>
     {{ .Content }}
