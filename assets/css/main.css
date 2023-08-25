@@ -16,7 +16,7 @@ html {
     scroll-behavior: smooth;
 }
 
-body {
+body:not(pre,code) {
     font-family: var(--font-body);
     font-size: var(--font-size);
     color: var(--font-color);
@@ -52,6 +52,14 @@ h4 {
 p {
     line-height: 1.7rem;
     margin-bottom: var(--paragraph-margin);
+}
+
+:not(pre) > code {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    background: var(--background-gray);
+    border-radius: 5px;
+    padding: 0 5px;
 }
 
 a {
