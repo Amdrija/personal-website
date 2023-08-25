@@ -1,8 +1,8 @@
 ---
 title: "Go Is Too Simple"
-date: 2023-08-30T16:50:08+02:00
+date: 2023-08-30T18:50:08+02:00
 draft: false
-summary: "Go is a very simple language, in fact, it's so simple that it's possible to pick it up in a week. This, alongside it's concurrency model, is, arguably, one of Go's greatest strengths. However, this simplicity comes at the cost of ergonomics...."
+summary: "Go is a very simple language, in fact, it's so simple that it's possible to pick it up in a week. This, alongside it's concurrency model, is, arguably, one of Go's greatest strengths. However, this simplicity comes at the cost of ergonomics."
 ---
 Go is a very simple language, in fact, it's so simple that it's possible to pick it up in a week. This, alongside it's concurrency model, is, arguably, one of Go's greatest strengths. However, this simplicity comes at the cost of ergonomics.
 
@@ -29,6 +29,7 @@ func printSum(a, b string) error {
 }
 ```
 
+
 A lot of times you are just going to check if an error is returned from a function call (in other words if it's null) and just return it. It is unnecessary repetition and makes the code harder to read. There are currently some proposals how to improve this, one of which is the [`handle-check` construct](https://github.com/golang/proposal/blob/master/design/go2draft-error-handling.md) which simplifies one of the frequent cases of error handling:
 
 ```go
@@ -39,7 +40,6 @@ func printSum(a, b string) error {
 	return nil
 }
 ```
-
 I like this proposal, but only for the default case where we just return the error again, otherwise, if there's a need for some special error handling code, we should use explicit error handling. This makes the code a bit tidier and easier to read.
 
 ## Null References, The Billion Dollar Mistake

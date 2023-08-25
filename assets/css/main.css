@@ -62,6 +62,11 @@ p {
     padding: 0 5px;
 }
 
+.highlight > div{
+    border-radius: var(--border-radius);
+    margin-bottom: var(--paragraph-margin);
+}
+
 a {
     display: inline-block;
     position: relative;
@@ -132,7 +137,6 @@ button {
     text-align: right;
     font-family: var(--font-headings);
     font-size: 1.2rem;
-    padding-top: 2rem;
 }
 
 @media screen and (max-width: 1024px){

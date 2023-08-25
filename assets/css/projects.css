@@ -10,6 +10,7 @@
     background: var(--background-gray);
     display: flex;
     flex-direction: column;
+    margin-bottom: var(--paragraph-margin);
 }
 
 .project::after {

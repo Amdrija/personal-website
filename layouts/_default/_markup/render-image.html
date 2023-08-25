@@ -1,0 +1,8 @@
+<p class="md__image">
+    {{ $alt := .Text }}
+    {{ with .Page.Resources.GetMatch (printf "%s" (.Destination | safeURL)) }}
+    {{ with .Resize (printf "%dx%d webp q100" .Width .Height)}}
+    <img src="{{ .RelPermalink}}" alt="{{ $alt }}" {{ with .Title }} title="{{ . }}" {{ end }} />
+    {{ end }}
+    {{ end }}
+</p>

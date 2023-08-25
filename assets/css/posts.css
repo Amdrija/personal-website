@@ -6,6 +6,7 @@
 .posts-container a {
     text-align: left;
     flex: 1 1 30%;
+    margin-bottom: var(--paragraph-margin);
 }
 
 .posts-container a:hover {
@@ -13,11 +14,14 @@
 }
 
 .post {
+    height: 100%;
     border-radius: var(--border-radius);
     position: relative;
     background: var(--background-gray);
     transition: background 0.3s;
     padding: var(--card-padding);
+    display: flex;
+    flex-direction: column;
 }
 
 .post::after {
@@ -42,6 +46,7 @@
 }
 
 .post-title {
+    flex: 0 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -50,6 +55,13 @@
 
 .post-title h3 {
     margin-bottom: 0;
+}
+
+.post-body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 @media screen and (max-width: 1024px) {

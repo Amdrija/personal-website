@@ -4,10 +4,12 @@
             <h3>{{ .Params.title }}</h3>
             <h4 class="post-time">{{ .ReadingTime }}min</h4>
         </div>
-        <p> {{ .Params.summary }}
-        </p>
-        {{ if (isset .Params "date")}}
-        <h4 class="post-date">{{ time.Format "January 2, 2006" .Params.date }}</h4>
-        {{end}}
+        <div class="post-body">
+            <p> {{ .Params.summary }}
+            </p>
+            {{ if (isset .Params "date")}}
+            <h4 class="post-date">{{ time.Format "January 2, 2006" .Params.date }}</h4>
+            {{end}}
+        </div>
     </div>
 </a>
