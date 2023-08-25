@@ -5,6 +5,7 @@
 
 .posts-container a {
     text-align: left;
+    flex: 1 1 30%;
 }
 
 .posts-container a:hover {
@@ -12,7 +13,6 @@
 }
 
 .post {
-    flex: 1 1 30%;
     border-radius: var(--border-radius);
     position: relative;
     background: var(--background-gray);
