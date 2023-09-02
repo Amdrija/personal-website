@@ -1,0 +1,16 @@
+.external-link {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    gap: 0.5rem
+}
+
+.external-link p {
+    margin: 0;
+}
+
+.external-link svg {
+    width: 1em;
+    height: 1em;
+    stroke: var(--font-color);
+}

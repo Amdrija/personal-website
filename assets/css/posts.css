@@ -18,7 +18,6 @@
     border-radius: var(--border-radius);
     position: relative;
     background: var(--background-gray);
-    transition: background 0.3s;
     padding: var(--card-padding);
     display: flex;
     flex-direction: column;

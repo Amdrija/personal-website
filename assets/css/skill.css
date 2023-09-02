@@ -1,0 +1,23 @@
+.skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: var(--paragraph-margin);
+}
+
+.skill {
+    display: flex;
+    align-items: center;
+}
+
+.skill svg {
+    fill: var(--font-color);
+    width: 32px;
+    height: 32px;
+}
+
+.skill h4 {
+    /* font-family: var(--font-headings); */
+    margin: 0 0.5rem;
+    font-size: 1.2rem;
+}

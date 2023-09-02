@@ -15,9 +15,9 @@
             </ul>
         </div>
         <div class="project-links">
-            <a href="{{ .Params.github}}" target="_blank">GitHub 🡕</a>
+            {{partial "external-link.html" (dict "href" .Params.github "text" "Github")}}
             {{ if isset .Params "livelink"}}
-            <a href="{{ .Params.livelink}}" target="_blank">Live 🡕</a>
+            {{partial "external-link.html" (dict "href" .Params.livelink "text" "Live")}}
             {{end}}
         </div>
     </div>

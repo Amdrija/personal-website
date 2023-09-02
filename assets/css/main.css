@@ -11,6 +11,8 @@
 @import "pagination";
 @import "post-page";
 @import "dark-mode-toggle";
+@import "skill";
+@import "external-link";
 
 html {
     scroll-behavior: smooth;
