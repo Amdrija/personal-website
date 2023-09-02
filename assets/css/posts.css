@@ -47,6 +47,7 @@
 .post-title {
     flex: 0 0 auto;
     display: flex;
+    gap: 0.5rem;
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--card-body-margin);
