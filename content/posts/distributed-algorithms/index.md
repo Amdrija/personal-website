@@ -1,8 +1,8 @@
 ---
-title: "Concurrent Algorithms"
+title: "Distributed Algorithms"
 date: 2023-10-18T00:55:00+02:00
 draft: false
-summary: "A distributes systems is one in which the failure of a computer you did not even know existed can render your own computer unusable."
+summary: "A distributed systems is one in which the failure of a computer you did not even know existed can render your own computer unusable."
 ---
 
 # Distributed Algorithms
