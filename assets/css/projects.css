@@ -60,7 +60,8 @@
     border-radius: var(--border-radius);
     background-color: var(--background-color);
     font-family: var(--font-headings);
-    margin: 0.5rem;
+    margin-right: 1rem;
+    margin-bottom: 1rem;
 }
 
 @media screen and (max-width: 1024px) {
