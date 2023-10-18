@@ -50,7 +50,7 @@ Here we will talk about 3 kinds of failures:
 1. Stubborn delivery: If a process p<sub>i</sub> sends a message m to a correct process p<sub>j</sub> and p<sub>i</sub> does not crash, then p<sub>j</sub> delivers m an infinite number of times
 2. No message is delivered unless it was sent
 
-```
+```pascal
 Implements: StubbornLinks (sp2p)
 Uses: FairLossLinks(flp2p)
 
@@ -68,7 +68,7 @@ upon event <flp2pDeliver, src, m> do
 2. No duplication: No message is delivered (to a process) more than once
 3. No creation: No message is delivered unless it was sent
 
-```
+```pascal
 Implements: PerfectLinks (pp2p)
 Uses: StubbornLinks (sp2p)
 
@@ -96,7 +96,7 @@ upon event <sp2pDeliver, src, m> do
 1. Strong Completeness
 2. Eventual Strong Accuracy: Eventually, no correct process is ever suspected
 
-```
+```pascal
 1. Processes periodically send heartbeat messages
 2. A process sets a timeout based on worst case round trip of a message exchange
 3. A process suspects another process if it timeouts that process
@@ -129,7 +129,7 @@ With best-effort broadcast, the burden of ensuring reliability is only on the se
 2. No duplication: No message is delivered more than once.
 3. No creation: No message is delivered unless it was broadcast
 
-```
+```pascal
 Implements: BestEfforBroadcasts (beb)
 Uses: PerfectPointToPointLinks (pp2p)
 
@@ -148,7 +148,7 @@ upon event <pp2pDeliver, pi, m> do
 3. No creation: No message is delivered unless it was broadcast
 4. Agreement: For any message m, if any correct process delivers m, then every correct process delivers m.
 
-```
+```pascal
 Implements: ReliableBroadcast (rb)
 Uses:
     BestEffortBroadcast (beb)
@@ -189,7 +189,7 @@ upon event <bebDeliver, pi, [Data, pj, m]> do
 
 Difference from reliable broadcast is that if ANY process delivers m, not if ANY CORRECT process deliver m.
 
-```
+```pascal
 Implements: uniformBroadcast (urb)
 Uses:
     BestEffortBroadcast (beb)
@@ -248,7 +248,7 @@ Uniform reliable broadcast with the causal order property.
 
 Same for uniform reliable causal broadcast, just uses unifrom reliable broadcast under the hood instead of reliable broadcast.
 
-```
+```pascal
 Implements: ReliableCausalOrderBroadcast (rco)
 Uses: ReliableBroadcast (rb)
 
@@ -287,7 +287,7 @@ The downside of this algorithm is that messages grow linearly with time and coul
 
 The idea is simple, we can remove messages from the past when all the correct processes have delivered it. This can be achieved by using the perfect failure detector and ack messages.
 
-```
+```pascal
 Implements: GarbageCollection, ReliableCausalOrderBroadcast
 Uses:
     ReliableBroadcast (rb)
@@ -336,7 +336,7 @@ For example: we have 3 processes, each will have the vector initialized to `[0,0
 
 It could be possible for a process p<sub>2</sub> to first receive the 2<sup>nd</sup> message from p<sub>1</sub> (this has a history of `[1,0,0]`), then receive the 1<sup>st</sup> message with the history `[0,0,0]`. Now, as you can see, because of the vector, it can correctly deduce the causal order of the messages.
 
-```
+```pascal
 Implements: ReliableCausalOrderBroadcast (rco)
 Uses: ReliableBroadcast (rb)
 
@@ -390,7 +390,7 @@ Here this could happen (both processes deliver a different message first and the
 
 For uniform total order broadcast we use the uniform reliable broadcast primitive instead of the reliable broadcast primitive.
 
-```
+```pascal
 Implements: TotalOrderBroadcast (tob)
 Uses:
     ReliableBroadcast (rb)
@@ -448,7 +448,7 @@ The processes go through rounds incrementally, in each round, the process with t
 
 A process that is not a leader in a round waits either to deliver the proposal of the leader in that round to adopt it or to suspect the leader.
 
-```
+```pascal
 Implements: Consensus (cons)
 Uses:
     BestEffortBroadcast (beb)
@@ -495,7 +495,7 @@ What happens if say process p<sub>1</sub> crashes, p<sub>2</sub> detects the cra
 
 The problem with the Hierarchical Consensus algorithm is that some processes decide too early, and if they crash, the others might have not choice but to decide on a different value. To fix this, every process should wait to make a decision until everyone has seen the proposals and sent theirs (or in other words, deicde only in the N<sup>th</sup> round.)
 
-```
+```pascal
 Implements: Uniform Consensus (ucons)
 Uses:
     BestEffortBroadcast (beb)
