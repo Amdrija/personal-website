@@ -156,5 +156,5 @@ ul, ol {
 }
 
 ol {
-    list-style: decimal;
+    list-style: decimal inside none;
 }
