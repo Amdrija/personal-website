@@ -5,10 +5,9 @@ draft: false
 summary: "A distributed system is one in which the failure of a computer you did not even know existed can render your own computer unusable."
 ---
 
-# Distributed Algorithms
+These are my lecture notes and comments for the [Distributed Algorithms]() course at EPFL. The reference for these notes are prof. Rachid Guerraoui's lectures and his book [Introduction to Reliable and Secure Distributed Programming](https://link.springer.com/book/10.1007/978-3-642-15260-3). I have tried to reformulate some proofs in order to better understand the subject. This post should be enough to get some basic understanding on distributed systems, for more advanced concepts, please consult the book.
 
-[](<#Matcher:\S+_(\S)+>)
-[](#Replace:<sub>$1</sub>)
+With that in mind, we can begin.
 
 ## Assumptions
 
@@ -42,13 +41,13 @@ Here we will talk about 3 kinds of failures:
 
 #### Fair-loss links
 
-1. Fair-loss: If a message is sent infintely often by p<sub>i</sub> to p<sub>,</sub> and neither p<sub>i</sub> or p<sub>j</sub> crashes, then m is delivered infinitely often by p<sub>j</sub> (Liveness)
-2. Finite duplication: If a message m is sent a finite number of times by p<sub>i</sub> to p<sub>,</sub> m is delivered a finite number of times by p<sub>j</sub> (Liveness)
+1. Fair-loss: If a message is sent infintely often by p<sub>i</sub> to p<sub>j</sub> and neither p<sub>i</sub> or p<sub>j</sub> crashes, then m is delivered infinitely often by p<sub>j</sub> (Liveness)
+2. Finite duplication: If a message m is sent a finite number of times by p<sub>i</sub> to p<sub>j</sub> m is delivered a finite number of times by p<sub>j</sub> (Liveness)
 3. No creation: No message is delivered unless it was sent (Safety)
 
 #### Stubborn links
 
-1. Stubborn delivery: If a process p<sub>i</sub> sends a message m to a correct process p<sub>,</sub> and p<sub>i</sub> does not crash, then p<sub>j</sub> delivers m an infinite number of times
+1. Stubborn delivery: If a process p<sub>i</sub> sends a message m to a correct process p<sub>j</sub> and p<sub>i</sub> does not crash, then p<sub>j</sub> delivers m an infinite number of times
 2. No message is delivered unless it was sent
 
 ```
@@ -65,7 +64,7 @@ upon event <flp2pDeliver, src, m> do
 
 #### Reliable (Perfect) links
 
-1. Validity: If <sub>i</sub> and <sub>j</sub> are correct, then every message sent by <sub>i</sub> to <sub>j</sub> is eventually delivered by <sub>j</sub>
+1. Validity: If p<sub>i</sub> and p<sub>j</sub> are correct, then every message sent by p<sub>i</sub> to p<sub>j</sub> is eventually delivered by p<sub>j</sub>
 2. No duplication: No message is delivered (to a process) more than once
 3. No creation: No message is delivered unless it was sent
 
@@ -126,7 +125,7 @@ No assumption
 
 With best-effort broadcast, the burden of ensuring reliability is only on the sender.
 
-1. Validity: If p_i and p_j are correct, then every message broadcast by p_i is eventually delivered by p_j
+1. Validity: If p<sub>i</sub> and p<sub>j</sub> are correct, then every message broadcast by p<sub>i</sub> is eventually delivered by p<sub>j</sub>
 2. No duplication: No message is delivered more than once.
 3. No creation: No message is delivered unless it was broadcast
 
@@ -144,7 +143,7 @@ upon event <pp2pDeliver, pi, m> do
 
 ### Regular Reliable Broadcast
 
-1. Validity: If p_i and p_j are correct, then every message broadcast by p_i is eventually delivered by p_j
+1. Validity: If p<sub>i</sub> and p<sub>j</sub> are correct, then every message broadcast by p<sub>i</sub> is eventually delivered by p<sub>j</sub>
 2. No duplication: No message is delivered more than once.
 3. No creation: No message is delivered unless it was broadcast
 4. Agreement: For any message m, if any correct process delivers m, then every correct process delivers m.
@@ -183,12 +182,12 @@ upon event <bebDeliver, pi, [Data, pj, m]> do
 
 ### Uniform Reliable Broadcast
 
-1. Validity: If p_i and p_j are correct, then every message broadcast by p_i is eventually delivered by p_j
+1. Validity: If p<sub>i</sub> and p<sub>j</sub> are correct, then every message broadcast by p<sub>i</sub> is eventually delivered by p<sub>j</sub>
 2. No duplication: No message is delivered more than once.
 3. No creation: No message is delivered unless it was broadcast
 4. Uniform Agreement: For any message m, if any process delivers m, then every correct process delivers m
 
-- Difference from reliable broadcast is that if ANY process delivers m, not if ANY CORRECT process deliver m.
+Difference from reliable broadcast is that if ANY process delivers m, not if ANY CORRECT process deliver m.
 
 ```
 Implements: uniformBroadcast (urb)
@@ -231,11 +230,11 @@ Two messages from the same process might not be delivered in the order they were
 
 ### Causality
 
-Let `m1` and `m2` be any two messages: `m1 -> m2` (`m1` causally precedes `m2`) if and only if:
+Let m<sub>1</sub> and m<sub>2</sub> be any two messages: m<sub>1</sub>->m<sub>2</sub> (m<sub>1</sub> causally precedes m<sub>2</sub>) if and only if:
 
-1. FIFO order: Some process pi broadcasts m1 before broadcasting m2
-2. Local order: Some process pi delivers m1 and then broadcasts m2
-3. Transitivity: There is a message m3 such that `m1 -> m3` and `m3 -> m2`
+1. FIFO order: Some process p<sub>i</sub> broadcasts m<sub>1</sub> before broadcasting m<sub>2</sub>
+2. Local order: Some process p<sub>i</sub> delivers m<sub>1</sub> and then broadcasts m<sub>2</sub>
+3. Transitivity: There is a message m3 such that m<sub>1</sub>->m<sub>3</sub> and m<sub>3</sub>->m<sub>2</sub>
 
 ### Reliable Causal Broadcast
 
@@ -282,7 +281,7 @@ It is assumed that you cannot broadcast the same message twice.
 
 This is a no wait algorithm, because if we deliver a message in the future, we don't wait first to deliver the messages in its past, but we deliver them immadeatly preceding the deliver of the future message.
 
-The downside of this algorithm is that messages grow linearly with time and could become _HUUUUUUUGEE_.
+The downside of this algorithm is that messages grow linearly with time and could become **HUUUUUUUGEE**.
 
 ### Garbage collection
 
@@ -331,11 +330,11 @@ upon event <rbDeliver, pi, [Data, past_m, m]> do
 
 ### Waiting Causal Broadcast
 
-Instead of sending the past of all the messages, we can just send a vector which contains as the ith element the sequence number of the message from process pi that the broadcasted message depends on.
+Instead of sending the past of all the messages, we can just send a vector which contains as the i<sup>th<sup> element the sequence number of the message from process p<sub>i</sub> that the broadcasted message depends on.
 
-For example: we have 3 processes, each will have the vector initialized to `[0,0,0]`. When process p1 broadcasts a message, it will send the vector `[0,0,0]`, and it will change its vector to `[1,0,0]`. Now, when the same process broadcasts a message, it will send a vector `[1,0,0]` with the message. The process p3 then delivers both messages, it will now send the vector `[2, 0, 0]` and change its vector to `[2, 1, 0]` etc.
+For example: we have 3 processes, each will have the vector initialized to `[0,0,0]`. When process p<sub>1</sub> broadcasts a message, it will send the vector `[0,0,0]`, and it will change its vector to `[1,0,0]`. Now, when the same process broadcasts a message, it will send a vector `[1,0,0]` with the message. The process p<sub>3</sub> then delivers both messages, it will now send the vector `[2, 0, 0]` and change its vector to `[2, 0, 1]` etc.
 
-It could be possible for a process p2 to first receive the 2nd message from p1 (this has a history of `[1,0,0]`), then receive the 1st message with the history `[0,0,0]`. Now, as you can see, because of the vector, it can correctly deduce the causal order of the messages.
+It could be possible for a process p<sub>2</sub> to first receive the 2<sup>nd</sup> message from p<sub>1</sub> (this has a history of `[1,0,0]`), then receive the 1<sup>st</sup> message with the history `[0,0,0]`. Now, as you can see, because of the vector, it can correctly deduce the causal order of the messages.
 
 ```
 Implements: ReliableCausalOrderBroadcast (rco)
@@ -365,25 +364,23 @@ procedure deliver-pending
 
 ## Total Order Broadcast
 
-With causal and FIFO broadcast, "concurrent" unrelated messages could be delivered in different order by different nodes. For example, p1 broadcasts m1 and p2 broadcasts m2 at the same time. It may happen that p1 delivers m1 and then m2 while p2 delivers m2 then m1.
+With causal and FIFO broadcast, "concurrent" unrelated messages could be delivered in different order by different nodes. For example, p<sub>1</sub> broadcasts m1 and p<sub>2</sub> broadcasts m2 at the same time. It may happen that p<sub>1</sub> delivers m1 and then m2 while p<sub>2</sub> delivers m2 then m1.
 
-Total order broadcast imposes a global order on all the messages (even unrelated ones), so that in the previous example it would not be possible for p1 and p2 to deliver messages in a different order.
+Total order broadcast imposes a global order on all the messages (even unrelated ones), so that in the previous example it would not be possible for p<sub>1</sub> and p<sub>2</sub> to deliver messages in a different order.
 
 ### (Uniform) Total order property
 
-Let m1 and m2 be any two messages. Let pi be correct (any) process that delivers m1 without having delivered m2. Then no correct (any) process delivers m2 before m1.
+Let m1 and m2 be any two messages. Let p<sub>i</sub> be correct (any) process that delivers m1 without having delivered m2. Then no correct (any) process delivers m2 before m1.
 
 #### Weaker definitions:
 
-Let pi and pj be two correct (any) processes that deliver two messages m1 and m1. If pi delivers m1 before m2, then pj delivers m1 before m2.
+Let p<sub>i</sub> and p<sub>j</sub> be two correct (any) processes that deliver two messages m1 and m1. If p<sub>i</sub> delivers m1 before m2, then p<sub>j</sub> delivers m1 before m2.
 
 Here this could happen (one of the processes doesn't deliver both messages before crashing), while this specification would not be possible in the first formulation (because one delivers m1 and the other delivers m2 first):
 
 ![Total Order two messages delivered](images/weaker-total-order-two-message-deliver.png)
 
-Let pi and pj be correct (any) two processes that deliver a
-message m2. If pi delivers a message m1 before m2, then pj
-delivers m1 before m2.
+Let p<sub>i</sub> and p<sub>j</sub> be correct (any) two processes that deliver amessage m2. If p<sub>i</sub> delivers a message m1 before m2, then p<sub>j</sub> delivers m1 before m2.
 
 Here this could happen (both processes deliver a different message first and then crash):
 
@@ -428,7 +425,7 @@ upon event <Decide, decided>_sn do
 
 One can build consensus with total order broadcast (everybody tob broadcasts their proposal in a message and the consensus pick the first tob delivered message).
 
-One can build total ordered broadcast with consensus and reliable broadcast
+One can build total ordered broadcast with consensus and reliable broadcast.
 
 Therefore, consensus and total order broadcast are equivalent problems in a system with reliable channels.
 
@@ -483,9 +480,9 @@ upon event p_round = self and broadcast = false and currentProposal != nil do
     broadcast := true;
 ```
 
-Let's assume that pi is a correct process with the smalles id in a run. Assume that pi decides v. Then if i = n, pn would be the only correct process, therefore a consensus is reached. Otherwise, in round i, all correct processes receive v and change their currentProposal to v, afterwards, when they are in their round, they will decide on their currentProposal which is v.
+Let's assume that p<sub>i</sub> is a correct process with the smalles id in a run. Assume that p<sub>i</sub> decides `v`. Then if `i = n`, p<sub>n</sub> would be the only correct process, therefore a consensus is reached. Otherwise, in round `i`, all correct processes receive `v` and change their currentProposal to `v`, afterwards, when they are in their round, they will decide on their currentProposal which is `v`.
 
-What happens if say process p1 crashes, p2 detects the crash and moves to next round, while p3 still didn't detect the crash and gets a decided message of p1 after p2 has already sent it's message. But, I guess that this would not be possible because of `<bebDeliver, p_round, value>`. Since p3 would still be in `round = 1`, it would be waiting for `<bebDeliver, p1, value>`, so it would not be able to trigger the event `<bebDeliver, p2, value>` (because the `round = 1`). Otherwise, if it managed to trigger the event `<bebDeliver, p2, value>`, it would have to have detected the crash of p1 (because it wouldn't be able to move onto the next round `round = 2` as the p1 decide message has to be delivered after p2's). Therefore, it would not be able to trigger the event `<bebDeliver, p1, value>` to overwrite the `currentProposal`. Maybe it would be easier to just have an if clause in the event `<bebDeliver, pi, value>`: `if i == round do ...`
+What happens if say process p<sub>1</sub> crashes, p<sub>2</sub> detects the crash and moves to next round, while p<sub>3</sub> still didn't detect the crash and gets a decided message of p<sub>1</sub> after p<sub>2</sub> has already sent it's message. But, I guess that this would not be possible because of `<bebDeliver, p_round, value>`. Since p<sub>3</sub> would still be in `round = 1`, it would be waiting for `<bebDeliver, p1, value>`, so it would not be able to trigger the event `<bebDeliver, p2, value>` (because the `round = 1`). Otherwise, if it managed to trigger the event `<bebDeliver, p2, value>`, it would have to have detected the crash of p<sub>1</sub> (because it wouldn't be able to move onto the next round `round = 2` as the p<sub>1</sub> decide message has to be delivered after p<sub>2</sub>'s). Therefore, it would not be able to trigger the event `<bebDeliver, p1, value>` to overwrite the `currentProposal`. Maybe it would be easier to just have an if clause in the event `<bebDeliver, pi, value>`: `if i == round do ...`
 
 ### Uniform Consensus
 
@@ -496,7 +493,7 @@ What happens if say process p1 crashes, p2 detects the crash and moves to next r
 
 #### Algorithm - Uniform Hierarchical Consensus
 
-The problem with the Hierarchical Consensus algorithm is that some processes decide too early, and if they crash, the others might have not choice but to decide on a different value. To fix this, every process should wait to make a decision until everyone has seen the proposals and sent theirs (or in other words, deicde only in the Nth round.)
+The problem with the Hierarchical Consensus algorithm is that some processes decide too early, and if they crash, the others might have not choice but to decide on a different value. To fix this, every process should wait to make a decision until everyone has seen the proposals and sent theirs (or in other words, deicde only in the N<sup>th</sup> round.)
 
 ```
 Implements: Uniform Consensus (ucons)
@@ -534,8 +531,8 @@ upon event p_round = self and broadcast = false and currentProposal != nil do
     broadcast := true;
 ```
 
-Lemma: If a process pj completes round I without receiving any message from pi and i < j, then pi crashes by the end of round j.
+Lemma: If a process p<sub>j</sub> completes round `i` without receiving any message from p<sub>i</sub> and `i < j`, then p<sub>i</sub> crashes by the end of round `j`.
 
-Proof: Suppose pj completes round i without receiving a message from pi, i < j, and pi completes round j. Since pj suspects pi in round i, pi has crashed before pj completes round i. Therefore, pi is in the worst case stuck in round pj waiting for the pj's message. In order to move to the next round, it would have to suspect pj crashed (which isn't possible, because pj detected pi's crash, therefor pi crashed before pj) or it would have to have received a message from pj (which is not possible because pi crashes in j's round i and it j only sends a message in round j > i, which is after round i).
+Proof: Suppose p<sub>j</sub> completes round `i` without receiving a message from p<sub>i</sub>, `i < j`, and p<sub>i</sub> completes round `j`. Since p<sub>j</sub> suspects p<sub>i</sub> in round `i`, p<sub>i</sub> has crashed before p<sub>j</sub> completes round `i`. Therefore, p<sub>i</sub> is in the worst case stuck in round `j` waiting for the p<sub>j</sub>'s message. In order to move to the next round, it would have to suspect p<sub>j</sub> crashed (which isn't possible, because p<sub>j</sub> detected p<sub>i</sub>'s crash, therefore p<sub>i</sub> crashed before p<sub>j</sub>) or it would have to have received a message from p<sub>j</sub> (which is not possible because p<sub>i</sub> crashes in p<sub>j</sub>'s round `i` and p<sub>j</sub> only sends a message in round `j > i`, which is after round `i`).
 
-Correctness proof: Consider the process with the lowest id which decides, say pi. Thus, pi completes round n. By the previous lemma, in round I, every pj with j > i receives the currentProposal of pi (otherwise, pi would have crashed at the end of round J, which would prevent it from reaching round n) and adopts it. Thus, every process which sends a message after round I or decides, has the same currentProposal at the end of round I. As is the case with the regular consensus, all processes will decide on the value of the process with the lowest id. Therefore, all processes that decide will decide on the same value.
+Correctness proof: Consider the process with the lowest id which decides, say p<sub>i</sub>. Thus, p<sub>i</sub> completes round `n`. By the previous lemma, in round `i`, every p<sub>j</sub> with `j > i` receives the `currentProposal` of p<sub>i</sub> (otherwise, p<sub>i</sub> would have crashed at the end of round `j`, which would prevent it from reaching round `n`) and adopts it. Thus, every process which sends a message after round `i` or decides, has the same `currentProposal` at the end of round `i`. As is the case with the regular consensus, all processes will decide on the value of the process with the lowest id. Therefore, all processes that decide will decide on the same value.
