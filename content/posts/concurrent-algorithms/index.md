@@ -5,7 +5,7 @@ draft: false
 summary: "With the increase of availability of multi-core hardware, it has become vital to understand concurrent algorithms in order to fully exploit the capabilities of the machines. This course teaches exactly that."
 ---
 
-# Concurrent Algorithms
+These are my lecture notes and comments for the [Concurrent Computiong](https://edu.epfl.ch/studyplan/en/master/computer-science/coursebook/concurrent-computing-CS-453) course at EPFL. The reference for these notes are prof. Rachid Guerraoui’s lectures and his book [Algorithms for Concurrent Systems](https://www.amazon.com/Algorithms-for-concurrent-systems/dp/2889152839). I have tried to reformulate some proofs in order to better understand the subject. This post deals with more advanced topics than locking, it's main concern is to implement wait-free concurrent algorithms.
 
 ## Assumptions
 
@@ -111,13 +111,13 @@ Based on concurrency guarantees:
 - Regular
 - Atomic
 
-#### Safe register
+### Safe register
 
 Safety: A read that is not concurrent with a write returns the last written value. A safe register ensures safety. It only supports a single writer.
 
 ![Safe execution](images/safe-execution.png)
 
-#### Regular register
+### Regular register
 
 Regularity: A read that is concurrent with a write returns the value written by that write or the value written by the last preceding write. A regular register ensures regularity and safety. It only supports a single writer.
 
@@ -125,7 +125,7 @@ Read-write inversion: when two consecutive (non-overlapping) reads are concurren
 
 ![Regular execution](images/regular-execution.png)
 
-#### Atomic register
+### Atomic register
 
 Atomicity: An atomic (linearizable) register is one that ensures linearizability. Such a register ensures the safety and regularity properties above, but in addition, prevents the situation of read-write inversion. The second read must succeed the first one in any linearization, and thus must return the same or a "newer" value.
 
