@@ -150,3 +150,11 @@ button {
         padding-top: 0;
     }
 }
+
+ul, ol {
+    margin-bottom: 1rem;
+}
+
+ol {
+    list-style: decimal;
+}

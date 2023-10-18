@@ -9,9 +9,9 @@ These are my lecture notes and comments for the [Distributed Algorithms](https:/
 
 With that in mind, we can begin.
 
-# Assumptions
+## Assumptions
 
-## Process
+### Process
 
 Processes model a sequential program. In our model we assume that there are N processes which are unique and know each other. They are connected by links through which they exchange messages. Finally, modules within the same process interact by exchanging events.
 
@@ -119,9 +119,9 @@ The timing assumptions hold eventually
 
 No assumption
 
-# Reliable Broadcast
+## Reliable Broadcast
 
-## Best-Effort Broadcast
+### Best-Effort Broadcast
 
 With best-effort broadcast, the burden of ensuring reliability is only on the sender.
 
@@ -141,7 +141,7 @@ upon event <pp2pDeliver, pi, m> do
     trigger <bebDeliver, pi, m>;
 ```
 
-## Regular Reliable Broadcast
+### Regular Reliable Broadcast
 
 1. Validity: If p<sub>i</sub> and p<sub>j</sub> are correct, then every message broadcast by p<sub>i</sub> is eventually delivered by p<sub>j</sub>
 2. No duplication: No message is delivered more than once.
@@ -180,7 +180,7 @@ upon event <bebDeliver, pi, [Data, pj, m]> do
             from[pi]:=from[pi] U {[pj,m]};
 ```
 
-## Uniform Reliable Broadcast
+### Uniform Reliable Broadcast
 
 1. Validity: If p<sub>i</sub> and p<sub>j</sub> are correct, then every message broadcast by p<sub>i</sub> is eventually delivered by p<sub>j</sub>
 2. No duplication: No message is delivered more than once.
@@ -224,11 +224,11 @@ At any point in time, the `correct` set will contain nodes that are correct and 
 
 Here the acks are the same messages as the original broadcast message. The firs time that we get a message (when it isn't in the forward set), we rebroadcast it to all the other nodes as an ack.
 
-# Causal Broadcast
+## Causal Broadcast
 
 Two messages from the same process might not be delivered in the order they were broadcast. With causal broadcast, we want to deliver messages in the causal order.
 
-## Causality
+### Causality
 
 Let m<sub>1</sub> and m<sub>2</sub> be any two messages: m<sub>1</sub>->m<sub>2</sub> (m<sub>1</sub> causally precedes m<sub>2</sub>) if and only if:
 
@@ -236,15 +236,15 @@ Let m<sub>1</sub> and m<sub>2</sub> be any two messages: m<sub>1</sub>->m<sub>2<
 2. Local order: Some process p<sub>i</sub> delivers m<sub>1</sub> and then broadcasts m<sub>2</sub>
 3. Transitivity: There is a message m3 such that m<sub>1</sub>->m<sub>3</sub> and m<sub>3</sub>->m<sub>2</sub>
 
-## Reliable Causal Broadcast
+### Reliable Causal Broadcast
 
 Reliable broadcast with the causal order property.
 
-## Uniform Reliable Causal Broadcast
+### Uniform Reliable Causal Broadcast
 
 Uniform reliable broadcast with the causal order property.
 
-## Non-blocking algorithm using the past
+### Non-blocking algorithm using the past
 
 Same for uniform reliable causal broadcast, just uses unifrom reliable broadcast under the hood instead of reliable broadcast.
 
@@ -283,7 +283,7 @@ This is a no wait algorithm, because if we deliver a message in the future, we d
 
 The downside of this algorithm is that messages grow linearly with time and could become **HUUUUUUUGEE**.
 
-## Garbage collection
+### Garbage collection
 
 The idea is simple, we can remove messages from the past when all the correct processes have delivered it. This can be achieved by using the perfect failure detector and ack messages.
 
@@ -328,7 +328,7 @@ upon event <rbDeliver, pi, [Data, past_m, m]> do
         past := past U {[pi, m]};
 ```
 
-## Waiting Causal Broadcast
+### Waiting Causal Broadcast
 
 Instead of sending the past of all the messages, we can just send a vector which contains as the i<sup>th<sup> element the sequence number of the message from process p<sub>i</sub> that the broadcasted message depends on.
 
@@ -362,13 +362,13 @@ procedure deliver-pending
             VC[s] := VC[s] + 1;
 ```
 
-# Total Order Broadcast
+## Total Order Broadcast
 
 With causal and FIFO broadcast, "concurrent" unrelated messages could be delivered in different order by different nodes. For example, p<sub>1</sub> broadcasts m1 and p<sub>2</sub> broadcasts m2 at the same time. It may happen that p<sub>1</sub> delivers m1 and then m2 while p<sub>2</sub> delivers m2 then m1.
 
 Total order broadcast imposes a global order on all the messages (even unrelated ones), so that in the previous example it would not be possible for p<sub>1</sub> and p<sub>2</sub> to deliver messages in a different order.
 
-## (Uniform) Total order property
+### (Uniform) Total order property
 
 Let m1 and m2 be any two messages. Let p<sub>i</sub> be correct (any) process that delivers m1 without having delivered m2. Then no correct (any) process delivers m2 before m1.
 
@@ -386,7 +386,7 @@ Here this could happen (both processes deliver a different message first and the
 
 ![Total Order different messages delivered](images/weaker-total-order-different-message-deliver.png)
 
-## Algorithm
+### Algorithm
 
 For uniform total order broadcast we use the uniform reliable broadcast primitive instead of the reliable broadcast primitive.
 
@@ -429,11 +429,11 @@ One can build total ordered broadcast with consensus and reliable broadcast.
 
 Therefore, consensus and total order broadcast are equivalent problems in a system with reliable channels.
 
-# Consensus
+## Consensus
 
 In the consensus problem, processes propose values and have to agree on one of these proposed values.
 
-## (Regular) Consensus
+### (Regular) Consensus
 
 1. Validity: Any value decided is a value proposed
 2. Agreement: No two correct processes decide differently
@@ -484,7 +484,7 @@ Let's assume that p<sub>i</sub> is a correct process with the smalles id in a ru
 
 What happens if say process p<sub>1</sub> crashes, p<sub>2</sub> detects the crash and moves to next round, while p<sub>3</sub> still didn't detect the crash and gets a decided message of p<sub>1</sub> after p<sub>2</sub> has already sent it's message. But, I guess that this would not be possible because of `<bebDeliver, p_round, value>`. Since p<sub>3</sub> would still be in `round = 1`, it would be waiting for `<bebDeliver, p1, value>`, so it would not be able to trigger the event `<bebDeliver, p2, value>` (because the `round = 1`). Otherwise, if it managed to trigger the event `<bebDeliver, p2, value>`, it would have to have detected the crash of p<sub>1</sub> (because it wouldn't be able to move onto the next round `round = 2` as the p<sub>1</sub> decide message has to be delivered after p<sub>2</sub>'s). Therefore, it would not be able to trigger the event `<bebDeliver, p1, value>` to overwrite the `currentProposal`. Maybe it would be easier to just have an if clause in the event `<bebDeliver, pi, value>`: `if i == round do ...`
 
-## Uniform Consensus
+### Uniform Consensus
 
 1. Validity: Any value decided is a value proposed
 2. Uniform Agreement: No two processes decide differently
