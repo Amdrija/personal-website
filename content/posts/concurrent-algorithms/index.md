@@ -333,3 +333,49 @@ We need to choose the maximum (or minimum) such k, so that two concurrent write 
 With the ordering, it is atomic, because the only case when we can possibly return different values on reads are when maximum timestamp is not unique. However, the ordering property will always force us to pick the same timestamp in this situation, thus we will always return the same value. Therefore, a read write inversion is not possible.
 
 Safety and regularity are trivially satisfied.
+
+## Impossibility Results
+
+In this chapter we will prove some impossibility results and complexity lower bounds for making atomic registers from base safe registers.
+
+### Bound on SRSW atomic register implementations
+
+There is no wait-free algorithm that:
+
+1. Implements a SRSW atomic register
+2. Uses a **finite** number of **bound** SRSW regular registers
+3. Where the base registers can only be written by the writer
+
+Without loss of generality, we can assume:
+
+1. The higher-level register is binary
+2. Instead of finitely many SRSW regular registers, there is only one SRSW regular register (called reg) - say we had N registers, then the big register will hold N bits, each representing one register.
+
+Adverserial example:
+Writer alternates between writing `0` and `1` on the atomic register infinite times.
+
+The implementing algorithm uses finite number of registers - `M`, each holding `0` or `1`, which means there are 2<sup>M</sup> different values. Say that in the given sequence, each different value written to the underlying register is written at most `X` times, that means that there are `2^M* X` writes, which is not possible since there are infinite number of writes. Hence, when a `Write(0)` occurs, there has to be a value v<sub>0</sub> which occurs an infinite amount of times. Similarly, there has to be a value v<sub>n</sub> which occurs an infinite amount of times when doing a `Write(1)` operation.
+
+Let's say that when writing a 1, the register goes through some kind of a sequence of values from v<sub>0</sub> to v<sub>n</sub>. This sequence might not be the same every time, however, analogous to the previous argument, there will have to be some sequence of value changes from such that it repeats infinitely often (as otherwise we would have to have an infinite number of written values, but the registers are bounded) - let that sequence be v<sub>0</sub>, v<sub>1</sub>, ... , v<sub>n</sub>.
+
+Let's say that we schedule a long write, and reads to happen inbetween underlying value writes v<sub>i</sub> and v<sub>i + 1</sub> (after v<sub>i</sub> and before v<sub>i + 1</sub>). At some point, one of these writes has to cause the reader to read a 1, let the value written before such write be v<sub>i</sub> (it may happen multiple times, but at least once, otherwise, we would not be able to write anything into the register).
+
+Now, we can schedule two consecutive reads - r<sub>1</sub> and r<sub>2</sub> to be concurrent to the write v<sub>i + 1</sub>. Because of the regular property of the underlying registers, both reads can return the previous written value v<sub>i</sub> or the current value v<sub>i + 1</sub>. Therefore, r<sub>1</sub> can read v<sub>i + 1</sub> and then r<sub>2</sub> can read v<sub>i</sub>, causing a read inversion which breaks atomicity.
+
+![Impossibility of SRSW](images/impossibility-srsw-vi.png)
+
+In case it was v<sub>1</sub> causing the read to read a 1, then the r<sub>2</sub> will read v<sub>0</sub> as the previous value, while r<sub>1</sub> can read v<sub>1</sub>.
+
+![Impossibility of SRSW edge case 1](images/impossibility-srsw-v1.png)
+
+In case it was v<sub>1</sub> causing the read to read a 1, then the r<sub>2</sub> will read v<sub>0</sub> as the previous value, while r<sub>1</sub> can read v<sub>1</sub>.
+
+![Impossibility of SRSW edge case 1](images/impossibility-srsw-v1.png)
+
+### Bound on MRSW atomic register implementations
+
+There is no wait-free algorithm that:
+
+1. Implements a MRSW atomic register,
+2. Uses any number of SRSW atomic registers,
+3. And where the base registers can only be written by the writer

@@ -6,6 +6,9 @@ disableKinds = ['taxonomy', 'term']
 
 
 [markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
   [markup.highlight]
     anchorLineNos = false
     codeFences = true
