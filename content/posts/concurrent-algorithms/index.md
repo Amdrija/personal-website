@@ -379,3 +379,23 @@ There is no wait-free algorithm that:
 1. Implements a MRSW atomic register,
 2. Uses any number of SRSW atomic registers,
 3. And where the base registers can only be written by the writer
+
+Proof:
+
+Let's assume that this is true for 1 writer and 2 readers, because if it is, then it will be true for any greater number of multiple readers as well.
+
+If the algorithm `A` uses an any number of SRSW atomic registers, then it is the same as having 1 register per reader, same proof as in the regular to atomic impossibility result.
+
+We also assume that it is true for "binary" registers, therefore it would hold true for M-valued registers as well.
+
+MRSW register `atom` initially has `0`. Consider the `atom.Write(1)` operation.
+
+`w1, ..., wn` are individual writes to the SRSW registers (one at a time). If the writer is communicating with reader `r` (i.e writing to his register), then the reader `r'` will not see this and will always return the same value, and vice-versa.
+
+Because the readers have to read `0` before the write and `1` after the write. Therefore, there is some `i`, `j`, `i != j` for which `ri = 0` and `ri+1 = 1`, and, `r'j = 0` and `r'j + 1 = 1`, because `w1, ..., wn` are writes to separate registers (cannot communicate with both readers at the same time).
+
+Let's assume, without loss of generality that `i < j`. Then, if we schedule the reader `r` to read after `i`, then it will have to return `1`. Afterwards, we can schedule the reader `r'` to read, however, because the write was happening to the `r`'s register, then, for the reader `r'` it's as if the write never happened, therefore, it would have to read the value that was before the write, which is `r'i`. Since, the reader's return value changes at `r'j+1`, where `j > i`, therefore, the reader `r'` reads a `0` and we have a read inversion.
+
+![Impossibility result MRSW](images/impossibility-mrsw.png)
+
+To conclude, readers must communicate in order to implement an MRSW atomic register from SRSW atomic registers.
