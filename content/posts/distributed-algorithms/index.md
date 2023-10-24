@@ -372,7 +372,7 @@ Total order broadcast imposes a global order on all the messages (even unrelated
 
 Let m1 and m2 be any two messages. Let p<sub>i</sub> be correct (any) process that delivers m1 without having delivered m2. Then no correct (any) process delivers m2 before m1.
 
-### Weaker definitions:
+### Weaker definitions
 
 Let p<sub>i</sub> and p<sub>j</sub> be two correct (any) processes that deliver two messages m1 and m1. If p<sub>i</sub> delivers m1 before m2, then p<sub>j</sub> delivers m1 before m2.
 
@@ -536,3 +536,92 @@ Lemma: If a process p<sub>j</sub> completes round `i` without receiving any mess
 Proof: Suppose p<sub>j</sub> completes round `i` without receiving a message from p<sub>i</sub>, `i < j`, and p<sub>i</sub> completes round `j`. Since p<sub>j</sub> suspects p<sub>i</sub> in round `i`, p<sub>i</sub> has crashed before p<sub>j</sub> completes round `i`. Therefore, p<sub>i</sub> is in the worst case stuck in round `j` waiting for the p<sub>j</sub>'s message. In order to move to the next round, it would have to suspect p<sub>j</sub> crashed (which isn't possible, because p<sub>j</sub> detected p<sub>i</sub>'s crash, therefore p<sub>i</sub> crashed before p<sub>j</sub>) or it would have to have received a message from p<sub>j</sub> (which is not possible because p<sub>i</sub> crashes in p<sub>j</sub>'s round `i` and p<sub>j</sub> only sends a message in round `j > i`, which is after round `i`).
 
 Correctness proof: Consider the process with the lowest id which decides, say p<sub>i</sub>. Thus, p<sub>i</sub> completes round `n`. By the previous lemma, in round `i`, every p<sub>j</sub> with `j > i` receives the `currentProposal` of p<sub>i</sub> (otherwise, p<sub>i</sub> would have crashed at the end of round `j`, which would prevent it from reaching round `n`) and adopts it. Thus, every process which sends a message after round `i` or decides, has the same `currentProposal` at the end of round `i`. As is the case with the regular consensus, all processes will decide on the value of the process with the lowest id. Therefore, all processes that decide will decide on the same value.
+
+## FLP Impossibility Result
+
+The FLP Impossibility result proves that it is not possible to solve binary consensus in an asynchronous model without a failure detector.
+
+It proves that the "regular" consensus is not possible, therefore, the uniform consensus cannot be possible as well.
+
+In an asynchronous model, there's no shared global clock and the message delays are arbitary (but finite).
+
+Let `M` denote the message pool of outstanding (not-yet-received) messages. `M` is initialized to an empty set.
+
+In this model, there exists at most one process which takes finitely many steps; all other processes take infintely many step (in other words at most 1 process can crash).
+
+If a process takes infinitely many steps, it delivers all messages sent to it by processes.
+
+### Proof
+
+We will prove the FLP Impossibility result by contradiction. We assume that there is some deterministic algorithm `P` which solves the problem.
+
+A configuration is a snapshost of a run, it includes:
+
+- the current state of the message pool `M`
+- the proposal of each process
+- the sequence of messages received thus far by each process
+
+A run represents a walk through a big (possibly infinite) directed graph, with vertices corresponding to configurations and edges corresponding to message deliveries.
+
+Types of configurations:
+
+- 0-valent: ll possible sequences of message deliveries lead to the all-zero outcome
+- 1-valent: all possible sequences of message deliveries lead to the all-one outcome
+- bivalent: neither 0-valent nor 1-valent configuration.
+
+The idea is now to prove that there is always an infinite path of bivalent we can take, no matter the algorithm `P`.
+
+### Lemma 1: There exists a bivalent initial configuration
+
+Consider an initial configuration `Xi = 11...1100...00`, such that the first `i` processes propose `1` and the rest `n - i` processes propose `0`.
+The configuration `X0 = 0...0` is therefore 0-valent, as if the algorithm `P` is correct, it would have to satisfy the validity property which stipulates that a decided value has to be proposed first. Since the proposed value is only `0` then the decided value can only be `0` afterwards. Similarly, the configuration `Xn = 1...1` is 1-valent.
+
+Two configurations are similar iff:
+
+1. For every process, the proposals are identical
+2. For every process, the states are identical
+3. The message pools are identical
+
+Now, considering that we start with a 0-valent configuration `X0` and end up with a 1-valent configuration `Xn`, in between, there has to be at least 1 pair `Xj` and `Xj+1` where `Xj` is 0-valent and `Xj+1` is valent (proof by contradiction, suppose there isn't, then every pair is 0-valent, meaning that the pair `Xn-1` and `Xn` are both 0-valent, which isn't possible since `Xn` is 1-valent).
+
+The configurations `Xj` and `Xj+1` are the same except the proposal of `pj+1`, which is `0` in `Xj` and `1` in `Xj+1`. Now, if we crash `pj+1` before it can propose at all, we can deliver the same sequence of messages from `Xj` and `Xj+1`. Now, they start with the same proposals, the same (empty) state and the same message pools, upon delivery of the messages in the same order, every subsequent configuration must have the same proposals, the same state (because the algorithm `P` is deterministic) and the same message pools in both runs. In the run from `Xj`, we know that the final configuration causes the algorithm to decide `0`, therefore, in the run from `Xj+1`, the algorithm must also decide `0`, however, this is a contradiction to the 1-valency of `Xj+1`. In conclusion, there must be at least 1 bivalent starting configuration.
+
+### Lemma 2
+
+Let `Ci` denote a bivalent configuration and a message (p, m) in the message pool. Then there exists a sequence of message delvieries such that:
+
+1. The last step of the sequence is the delivery of (p, m)
+2. The end of the sequence `Ci+1` is a bivalent configuration.
+
+Case 1: Delivering leads to a bivalent configurations, trivial case.
+
+Case 2: Delivering leads to a 0-valent (without loss of generality) configuration.
+
+Let `Ci+1` be a configuration reachable from `Ci` via the delivery of a sequence of messages different from (p, m). The configuration is:
+
+1. 0*-configuration: delivering (p,m) at `Ci+1` leads to a 0-valent configuration
+2. 1*-configuration: delivering (p,m) at `Ci+1` leads to a 1-valent configuration
+3. bivalent*-configuration: delivering (p,m) at `Ci+1` leads to a bivalent configuration
+
+Therefore, `Ci` is a 0*-configuration. Now, we want to prove that starting from `Ci` there exists a non-0*-configuration.
+
+If that configuration is bivalent*, then we have proved that there existss a bivalent configuration. Therefore, the configurations must be 1* configuration. Let that configuration be `Y`, and the 0* configuration before it `X` (the same argument that this transition exists that we used in lemma 1). By delivering (p', m') from `X` we end up in `Y`.
+
+Because `X` is a 0* configuration, when we deliver (p,m) we end up in a 0-valent conviguration, and now when we deliver (p',m') we must still be in a 0-valent configuration - `V`.
+
+When we deliver (p', m') from `X`, we end up in `Y` which is a 1*configuration and then when we deliver (p, m) we end up in a 1-valent configuration `Z`.
+
+![Image for lemma 2 proof](images/flp-lemma2.png)
+
+Scenario 1: p and p' are not the same process, therefore at `V` and `Z`, the proposals must be the same, the states must be the same (because the processes cannot know in which order the messages are delivered globally) and the messages pools are the same. Therefore, from `V`, we deliver a sequence of messages `Sm` and end up deciding `0`. From `Z`, if we deliver the same sequence of messages `Sm`, we must end up deciding the same, therefore we must decide `0`, but, this is a contradiction to the assumption that `Y` is a 1* ocnfiguration.
+
+Scenario 2: p and p' are the same process. Now, p knows the order of the delviery of the messages m and m' and can therefore use this information to decide on `0` or `1` (because p's state might not be the same if first we deliver m and then m', compared to if we deliver m' and then m). However, if we crash p before it can decide, for all the processes outside P, the state will be the same. The message pools at `V` and `Z` are the same, the proposals are the same, but, as in scenario 1, we decide differently, which is a contradiction.
+
+Combining Lemma 1 and Lemma 2, we can devise this adverserial example:
+
+1. Start in a bivalent configuration `C0`
+2. Deliver the oldest message in the message pool (p, m)
+3. Using Lemma 2, we know that there must exist a bivalent configuration `Ci+1` the run ends up in when we deliver (p,m) last.
+4. Go to step 2.
+
+With this, we prove that there exists an infinite run where the algorithm never decides even if only 1 process crashes.
