@@ -399,3 +399,161 @@ Let's assume, without loss of generality that `i < j`. Then, if we schedule the 
 ![Impossibility result MRSW](images/impossibility-mrsw.png)
 
 To conclude, readers must communicate in order to implement an MRSW atomic register from SRSW atomic registers.
+
+## The power of registers
+
+In this chapter, we will discuss what is possible to implement just with registers and what isn't.
+
+### Counter
+
+A counter has two operations `inc()` and `read()` and maintains an integer `x` initialized to `0`.
+
+Naive implementation with just 1 register:
+
+```javascript
+read() {
+    return Reg.read();
+}
+
+inc() {
+    temp:= Reg.read() + 1;
+    Reg.write(temp);
+    
+    return ok;
+}
+```
+
+However, this implementation is not correct, because 2 processes which call the `inc()` operation concurrently could both read `0` from the register and then write `1` to it, therefore, the result is `1` instead of `2`.
+
+To implement an atomic counter, the processes share an array of registers `Reg[1 ... N]`:
+
+```javascript
+inc() {
+    Reg[i].write(Reg[i].read() + 1);
+    return ok;
+}
+
+read() {
+    sum = 0;
+    for j in range(1,N) {
+        sum = sum + Reg[j].read();
+    }
+
+    return sum;
+}
+```
+
+With this implementation, even when we have concurrent `inc()` operations, the processes write to their own register, so it is not possible to have the processes read the same counter value while incrementing. When calling `read()`, it is not possible to have a read inversion, because this would mean that there exists a register `k` such that the first reader read the "newely" incremeneted value, while the second reader read the old value. This is not possible, as the register themselves are atomic.
+
+### Snapshot
+
+A snapshot has operations `update()` and `scan()` and maintains an array `x` of size `N`.
+
+```javascript
+scan() {
+    return x;
+}
+
+update(i, value) {
+    x[i] = value;
+
+    return ok;
+}
+```
+
+Naive implementation - processes share one array of N registers `Reg[1 ... N]`:
+
+```javascript
+scan() {
+    for j in range(1, N) {
+        x[j] = Reg[j].read();
+    }
+
+    return x;
+}
+
+update(i, value) {
+    Reg[i].write(value);
+
+    return ok;
+}
+```
+
+The problem with this implementation is that it is possible for a slow read to return an array which wasn't "written" at any point in time.
+
+![Naive snapshot counter example](images/power-registers-naive-snapstho.png)
+
+In order to implement an atomic snapshot, we will first implement an operation `collect`, which returns, for ever index of the snapshot, the last written values or the value of any concurrent update (the same as the `scan` operation in naive implementation).
+
+Now, in order to successfully `scan`, the process keeps calling `collect` until two consecutive results are the same. This means that the snapshot did not change and it is safe to return without violating atomicity.
+
+The processes share one array of `N` registers `Reg[1 ... N]`, each containing a value and a timestamp.
+
+```javascript
+collect() {
+    for j in range(1, N) {
+        x[j] = Reg[j].read();
+    }
+
+    return x;
+}
+
+scan() {
+    last = this.collect();
+    while(true) {
+        current = this.collect();
+        if (last == current) {
+            return last.value;
+        }
+        last = current;
+    }
+}
+
+update(i, value) {
+    timestamp = timestamp + 1;
+    Reg[i].write(value, timestamp);
+
+    return ok;
+}
+```
+
+This implementation is atomic, however, it is not wait-free, because a process that reads could, in theory, never return if there are infinite concurrent writes.
+
+To implement a wait-free snapshot, the processes share an array of registers `Reg[1 ... N]` that each contain:
+
+- a value
+- a timestamp
+- a copy of the entire array of values
+
+To `scan`, a process keeps collecting and returns a `collect` if it did not change, or some `collect` returned by a concurrent `scan`. Timetamps are used to check if the `collect` changes or if a scan has been taken in the meantime.
+
+To `update`, a process calls `scan` and writes the value, the new timestamp and the result of the `scan`.
+
+```javascript
+update(i, value) {
+    timestamp = timestamp + 1;
+    Reg[i].write(value, timestamp, this.scan());
+
+    return ok;
+}
+
+scan() {
+    t1 = this.collect();
+    t2 = t1;
+
+    while (true) {
+        t3 = this.collect();
+        if (t3 == t2) {
+            return t3.value;
+        }
+
+        for j in range(1, N) {
+            if (t3[j].timestamp >= t1[j].timestamp + 2) {
+                return t3.array;
+            }
+        }
+
+        t2 = t3;
+    }
+}
+```
