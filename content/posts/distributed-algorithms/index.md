@@ -537,6 +537,32 @@ Proof: Suppose p<sub>j</sub> completes round `i` without receiving a message fro
 
 Correctness proof: Consider the process with the lowest id which decides, say p<sub>i</sub>. Thus, p<sub>i</sub> completes round `n`. By the previous lemma, in round `i`, every p<sub>j</sub> with `j > i` receives the `currentProposal` of p<sub>i</sub> (otherwise, p<sub>i</sub> would have crashed at the end of round `j`, which would prevent it from reaching round `n`) and adopts it. Thus, every process which sends a message after round `i` or decides, has the same `currentProposal` at the end of round `i`. As is the case with the regular consensus, all processes will decide on the value of the process with the lowest id. Therefore, all processes that decide will decide on the same value.
 
+### Consensus Algorithm 3
+
+A uniform consensus algorithm assuming a correct majority and an eventually perfect failure detector `P'`.
+
+The hierarchical consensus algorithm doesn't work with an eventually perfect failure detector, because a correct process may be suspected by other processes. Consider an example with 3 processes, `p1` decides `0`, but `p2` and `p3` suspect `p1` and move to the next round. Now, `p2` decides `1` and `p3` follows it afterwards. Since `p1` is correct and hasn't crashed, not all correct processes decide the same.
+
+![Hierarchical consensuse eventaully perfect failure detector counter example](images/hierarchical-eventually-perfect-counter.png)
+
+The uniform hierarchical consensus algorithm doesn't work as well. Consider the same scenario, but in addition, `p1` suspect both `p2` and `p3`. Now `p1` can move to the final (3rd) round and decide `0` while `p2` and `p3` decide `1`.
+
+![Uniform hierarchical consensuse eventaully perfect failure detector counter example](images/uniform-hierarchical-eventually-perfect-counter.png)
+
+The algorithm is also round-based: processes move incrementalyl form one round to the other. Process `pi` is the leader in every round `k` such that `k mod N = i`. In such a round, `pi` tries to decide. It succeeds if it is not suspected (processes that suspect `pi` inform `pi` and move to the next round, `pi` does so as well). If `pi` succeeds, `pi` uses reliable broadcast to send the decision to all (the reliability of the broadcast is important here to preclude the case where `pi` crashed, some other processes deliver the message and stop while the rest keep going without the majority).
+
+In order to decide, `pi` executes in order:
+
+1. Select among a majority the latest adopted value (latest with respect to the round in which the value is adopted)
+2. `pi` imposes that value at a majority: any process in that majority adopts that value - `pi` fails if it is suspected
+3. `pi` decides and broadcasts the decision to all
+
+Validity and integrity are trivial.
+
+Termination is provided by reliable broadcast, if a correct process decides, it uses reliable broadcast to send the decision to all: every correct process decides. By the correct majority assumption and the completeness property of the failure detector, no correct process remains blocked forever in some phase. By the accuracy property of the failure detector, some correct process reaches a round where it is the leader and it is not suspected and then it reaches a decision in that round.
+
+Agreement: Let `k` be the first round in which some process `pi` decides some value `v`, i.e, `pi` is the leader of round `k` and `pi` decides `v` in `k`. This means that, in round `k`, a majority of processes have adopted `v`. By the algorithm, no value else than `v` will be proposed (and hence decided) by any process in a round higher than `k`.
+
 ## FLP Impossibility Result
 
 The FLP Impossibility result proves that it is not possible to solve binary consensus in an asynchronous model without a failure detector.
