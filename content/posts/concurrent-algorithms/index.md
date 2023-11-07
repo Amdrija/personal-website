@@ -461,7 +461,7 @@ update(i, value) {
 }
 ```
 
-Naive implementation - processes share one array of N registers `Reg[1 ... N]`:
+Naive implementation - processes share one array of N atomic registers `Reg[1 ... N]`:
 
 ```javascript
 scan() {
@@ -487,7 +487,7 @@ In order to implement an atomic snapshot, we will first implement an operation `
 
 Now, in order to successfully `scan`, the process keeps calling `collect` until two consecutive results are the same. This means that the snapshot did not change and it is safe to return without violating atomicity.
 
-The processes share one array of `N` registers `Reg[1 ... N]`, each containing a value and a timestamp.
+The processes share one array of `N` atomic registers `Reg[1 ... N]`, each containing a value and a timestamp.
 
 ```javascript
 collect() {
@@ -509,13 +509,17 @@ scan() {
     }
 }
 
-update(i, value) {
+update(value) {
     timestamp = timestamp + 1;
     Reg[i].write(value, timestamp);
 
     return ok;
 }
 ```
+
+Here, we need the timestamps, because if some writer updates the register to a new value, and then to an old one, the reader could collect the same values before and after the updates and terminate, not knowing that a write occured in between. This is problematic as given in the following example:
+
+![snapshot timestmaps counter example](images/snapshot-timestamps-counter-example.png)
 
 This implementation is atomic, however, it is not wait-free, because a process that reads could, in theory, never return if there are infinite concurrent writes.
 
@@ -548,12 +552,148 @@ scan() {
         }
 
         for j in range(1, N) {
+            //this means that a process ran 2 update operations
+            //concurrently with the current scan operation
+            //As a result, the second update operation (t3)
+            //must have completed entirely within scan
+            //(because the process can see that the value changed before it
+            //hence the update operation must have started afterwards i.e
+            //after the process started scanning).
+            //This means that we can return the scan of that update operation.
             if (t3[j].timestamp >= t1[j].timestamp + 2) {
                 return t3.array;
             }
         }
 
         t2 = t3;
+    }
+}
+```
+
+## Consensus
+
+A consensus object makes a set of processes decide on a value. It has one operation: `propose` which returns a value. When a propose oepration returns, we say that the process decides. It has 3 properties:
+
+1. Aggreement - no two processes decide different values
+2. Validity - a decided value has to have been proposed by some process.
+3. Termination - Every correct process eventually decides a value.
+
+### LA (FLP) Impossibility
+
+No asynchronous deterministic algorithm, implements consensus among two processes using only registers.
+
+Proof: Consider two processes `p0` and `p1` and any number of registers, `R1`,...,`Rk`,... . Assume that a consensus algorithm A for `p0` and `p1` exists.
+
+Initial configuration C is a set of (initial) values of `p0` and `p1` together with the values of the registers `R1`,...,`Rk`,... .
+
+A step is an elementary action executed by some process `pl`: it consists in reading or writing a value in a register and changing `pl`'s state according to the algorithm A.
+
+A schedule S is a sequence of steps; S(C) denotes the configurations that results from applying S to C. In an asynchronous environment, there are no constraints on the schedules (i.e any sequence of steps is a valid schedule).
+
+A configuration C is 0-valent if, starting from C, no matter how the processes behave, no decision other than 0 is possible. Similarly for 0-valent configuration. If a configuration isn't 1-valent or 0-valent, then it is bivalent.
+
+Lemma 1: there is at least one initial bivalent configuration
+
+Proof: The initial configuration C(0,1) is bivalent. If we start from configuration C(0,0) and then choose a schedule where `p1` doesn't take any steps until `p0` decides (it must eventually decide because of the termination property of A), then `p0` must decide `0`. This is true if we apply the same schedule for the starting configuration C(0,1), since `p0` cannot distinguish the configuration C(0,1) from C(0,0) if `p1` is never scheduled. Similarly, if we start with the configuration C(1,1) and never schedule `p0`, then `p1` must eventually decide `1`. This is again true for the configuration C(0,1), since `p1` cannot distinguish it from the configuration C(1,1) if `p0` is never scheduled. Therefore, configuration C(0,1) is bivalent.
+
+Lemma 2: Given any bivalent configuration C, there is an arbitarily long schedule S such that S(C) is bivalent.
+
+Proof: Let S be the schedule with the maximum length such as D = S(C) is bivalent. p0(D) and p1(D) are both univalent: one of them is 0-valent (say p0(D)) and the other is 1-valent (say p1(D)). To go from D to p0(D), `p0` accesses a register R which must be the same in both cases, otherwise p1(p0(D)) is the same as p0(p1(D)), because they access diferent registers, hence the order doesn't matter. This is in contradiction with the very fact that p0(D) is 0-valent whereas p1(D) is 1-valent.
+
+To go from D to p0(D), p0 cannot read R, otherwise R has the same state in D and in p0(D). In this case, the registers and p1 have the same state in p1(p0(D)) and p1(D) (because p0 just reads R and doesn't write to it to communicate to `p1`). If `p1` is the only one executing steps, then `p1` eventually decides `1` in both cases, which is a contradiction with the fact that p0(D) is 0-valent. Similarly, `p1` cannot read R to go from D to p1(D).
+
+Thus both `p0` and `p1` write in R to go from D to p0(D), however, in that case p0(p1(D)) = p0(D) (because they overwrite each other). If `p0` is the only one executing steps, then `p0` eventually decides `0`, which is a contradiction to the 1-valencyu of p1(D). Analogous p1(p0(D)) = p0(D), which is also a contradiction.
+
+By using lemmas 1 and 2, there exists a bivalent initial configuration C and an infinite schedule S such that, for any prefix S' of S, S'(C) is bivalent. In an infinite schedule S, at least one process executes an infinite number of steps and does not decide, which is a contradiction to the termination property of A.
+
+## The limitations of registers
+
+After thoroughly learning about registers, here we'll present (and prove) some object which cannot be implemented with registers.
+
+### Fetch and Increment
+
+Operation `fetch_and_increment` increments the counter and returns the new value.
+
+Sequential specification:
+
+```javascript
+fetch_and_increment(){
+    counter = counter + 1;
+    return counter;
+}
+```
+
+To prove that fetch and increment cannot be implemented only by using registers, we will implement consensus by using fetch&inc and registers. Since consensus cannot be implemented by using only registeres, the same applies to fetch&inc, otherwise, we would be able to swap the fetch&inc object with the registers and algorithm that implement it, and then implement the consensus by only using registers.
+
+This implementation of 2-consensus uses fetch&inc object FC and 2 registers.
+
+```javascript
+propose(value) {
+    Reg[i].write(value);
+    val := FC.fetch_and_inc();
+
+    //if the process is the "winner"
+    if val == 1 {
+        return value;
+    } else {
+        //reads the register of the other process
+        return Reg[1 - i].read();
+    }
+}
+```
+
+### Queue
+
+Again, we will implement consensus by using a queue and show that an atomic wait-free queue cannot be implemented by using only registers.
+
+We wiil use two register and a queue which is initialized to `{winner, loser}`.
+
+```javascript
+propose(value) {
+    Reg[i].write(value);
+
+    val = q.dequeue();
+
+    if val == winner {
+        return value;
+    } else {
+        return Reg[1 - i].read();
+    }
+}
+```
+
+### Test and set
+
+2-consensus uses two registers and a test&set object T.
+
+```javascript
+propose(value) {
+    Reg[i].write(value);
+
+    val = T.test_and_set();
+
+    if val == 0 {
+        return value;
+    } else {
+        return Reg[1 - i].read();
+    }
+}
+```
+
+### Compare and swap
+
+Unlike other mentioned objects, the compare and swap object can implement consensus with an infinite number of processes (fetch&inc, queue and test&set can implement consensus with only 2 processes).
+
+The implementation uses only a compare and swap object CS initialized to `winner` (here winner is chosen as it is easier to explain the algorithm, however, usually a C&S object will be initialized to some "falsy"/"empty" value).
+
+```javascript
+propose(value) {
+    val = CS.compare_and_swap(winner, value);
+
+    if val = winner {
+        return value;
+    } else {
+        return val;
     }
 }
 ```
