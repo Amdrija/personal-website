@@ -29,57 +29,6 @@ Example: saying anything
 
 It is trivial to have one without the other, however, the hard part (i.e telling the truth) is satisfying both.
 
-### Compare and swap
-
-```javascript
-compare_and_swap(old_value, new_value) {
-    y = x;
-    if x == old_value
-        x = new_value;
-
-    return y;
-}
-```
-
-Locking with c&s:
-
-```javascript
-lock() {
-    while LOCKED == compare_and_swap(UNLOCKED, LOCKED);
-}
-
-unlock() {
-    compare_and_swap(LOCKED, UNLOCKED);
-}
-```
-
-### Test and Set
-
-```javascript
-test_and_set() {
-    y = x;
-    x = 1;
-
-    return y;
-}
-
-set_state(value) {
-    x = value;
-}
-```
-
-Locking with test and set:
-
-```javascript
-lock() {
-    while 1 == test_and_set();
-}
-
-unlock() {
-    set_state(0);
-}
-```
-
 ### Wait Freedom
 
 Any correct process that invokes an operation eventually gets a reply, no matter what happens to the other processes (very slow or crash)
@@ -271,7 +220,7 @@ Write(value) {
 
 This will not be atomic. Consider 3 processes, pw - writer process, p1 - reader process and p10 - reader process. The writer starts writing a value `x` to the register and overwrites the `Reg[1]`. Concurrent to the write, p1 reads and returns the new value `x`, but the writer still hasn't managed to overwrite the `Reg[10]`, so when the p10 reads, it will return the old value. This unfortunately violates atomicity as `Reg[10]` would have to return the new value `x` as well.
 
-In order to make this atomic, we will need to have communication between each two readers, by using the atomic SRSW registers. Thus, we would need N<sup>2</sup> registers. In `ReadReg[i][j]`, the reader is p<sub>i</sub> and the writer is p<sub>j</sub>.
+In order to make this atomic, we will need to have communication between each two readers, by using the atomic SRSW registers. Thus, we would need N2 registers. In `ReadReg[i][j]`, the reader is pi and the writer is pj.
 
 ```javascript
 Read() {
@@ -303,7 +252,7 @@ It would not work for multiple writers, as they compute timestamp locally. For e
 ### From MRSW atomic to MRMW atomic
 
 Following the intuition from the previous example, we need to have communication between the writers as well.
-We use N MRSW atomic registers, the writer of `Reg[i]` is p<sub>i</sub>.
+We use N MRSW atomic registers, the writer of `Reg[i]` is pi.
 
 ```javascript
 Read() {
@@ -328,7 +277,7 @@ Write() {
 }
 ```
 
-We need to choose the maximum (or minimum) such k, so that two concurrent write operations don't choose the same sequence number. For example, assume we have two processes which write, p<sub>1</sub> and p<sub>2</sub>. They write concurrently the values `1` and `2` respectively. Because the neither one completes the write operation before the other one reads, the resulting registers look like this: `Reg = [(timestamp: 1, value: 1), (timestamp: 1, value: 2)]`. Now, we have 2 reads which happen sequentially one after another. If we don't impose the ordering, the first read could read the value 1, the second value 2. This would violate safety, as the reads which are not concurrent with a write would have to return the last written value (which should be the same).
+We need to choose the maximum (or minimum) such k, so that two concurrent write operations don't choose the same sequence number. For example, assume we have two processes which write, p1 and p2. They write concurrently the values `1` and `2` respectively. Because the neither one completes the write operation before the other one reads, the resulting registers look like this: `Reg = [(timestamp: 1, value: 1), (timestamp: 1, value: 2)]`. Now, we have 2 reads which happen sequentially one after another. If we don't impose the ordering, the first read could read the value 1, the second value 2. This would violate safety, as the reads which are not concurrent with a write would have to return the last written value (which should be the same).
 
 With the ordering, it is atomic, because the only case when we can possibly return different values on reads are when maximum timestamp is not unique. However, the ordering property will always force us to pick the same timestamp in this situation, thus we will always return the same value. Therefore, a read write inversion is not possible.
 
@@ -354,21 +303,21 @@ Without loss of generality, we can assume:
 Adverserial example:
 Writer alternates between writing `0` and `1` on the atomic register infinite times.
 
-The implementing algorithm uses finite number of registers - `M`, each holding `0` or `1`, which means there are 2<sup>M</sup> different values. Say that in the given sequence, each different value written to the underlying register is written at most `X` times, that means that there are `2^M* X` writes, which is not possible since there are infinite number of writes. Hence, when a `Write(0)` occurs, there has to be a value v<sub>0</sub> which occurs an infinite amount of times. Similarly, there has to be a value v<sub>n</sub> which occurs an infinite amount of times when doing a `Write(1)` operation.
+The implementing algorithm uses finite number of registers - `M`, each holding `0` or `1`, which means there are 2M different values. Say that in the given sequence, each different value written to the underlying register is written at most `X` times, that means that there are `2^M* X` writes, which is not possible since there are infinite number of writes. Hence, when a `Write(0)` occurs, there has to be a value v0 which occurs an infinite amount of times. Similarly, there has to be a value vn which occurs an infinite amount of times when doing a `Write(1)` operation.
 
-Let's say that when writing a 1, the register goes through some kind of a sequence of values from v<sub>0</sub> to v<sub>n</sub>. This sequence might not be the same every time, however, analogous to the previous argument, there will have to be some sequence of value changes from such that it repeats infinitely often (as otherwise we would have to have an infinite number of written values, but the registers are bounded) - let that sequence be v<sub>0</sub>, v<sub>1</sub>, ... , v<sub>n</sub>.
+Let's say that when writing a 1, the register goes through some kind of a sequence of values from v0 to vn. This sequence might not be the same every time, however, analogous to the previous argument, there will have to be some sequence of value changes from such that it repeats infinitely often (as otherwise we would have to have an infinite number of written values, but the registers are bounded) - let that sequence be v0, v1, ... , vn.
 
-Let's say that we schedule a long write, and reads to happen inbetween underlying value writes v<sub>i</sub> and v<sub>i + 1</sub> (after v<sub>i</sub> and before v<sub>i + 1</sub>). At some point, one of these writes has to cause the reader to read a 1, let the value written before such write be v<sub>i</sub> (it may happen multiple times, but at least once, otherwise, we would not be able to write anything into the register).
+Let's say that we schedule a long write, and reads to happen inbetween underlying value writes vi and vi + 1 (after vi and before vi + 1). At some point, one of these writes has to cause the reader to read a 1, let the value written before such write be vi (it may happen multiple times, but at least once, otherwise, we would not be able to write anything into the register).
 
-Now, we can schedule two consecutive reads - r<sub>1</sub> and r<sub>2</sub> to be concurrent to the write v<sub>i + 1</sub>. Because of the regular property of the underlying registers, both reads can return the previous written value v<sub>i</sub> or the current value v<sub>i + 1</sub>. Therefore, r<sub>1</sub> can read v<sub>i + 1</sub> and then r<sub>2</sub> can read v<sub>i</sub>, causing a read inversion which breaks atomicity.
+Now, we can schedule two consecutive reads - r1 and r2 to be concurrent to the write vi + 1. Because of the regular property of the underlying registers, both reads can return the previous written value vi or the current value vi + 1. Therefore, r1 can read vi + 1 and then r2 can read vi, causing a read inversion which breaks atomicity.
 
 ![Impossibility of SRSW](images/impossibility-srsw-vi.png)
 
-In case it was v<sub>1</sub> causing the read to read a 1, then the r<sub>2</sub> will read v<sub>0</sub> as the previous value, while r<sub>1</sub> can read v<sub>1</sub>.
+In case it was v1 causing the read to read a 1, then the r2 will read v0 as the previous value, while r1 can read v1.
 
 ![Impossibility of SRSW edge case 1](images/impossibility-srsw-v1.png)
 
-In case it was v<sub>1</sub> causing the read to read a 1, then the r<sub>2</sub> will read v<sub>0</sub> as the previous value, while r<sub>1</sub> can read v<sub>1</sub>.
+In case it was v1 causing the read to read a 1, then the r2 will read v0 as the previous value, while r1 can read v1.
 
 ![Impossibility of SRSW edge case 1](images/impossibility-srsw-v1.png)
 
@@ -664,6 +613,33 @@ propose(value) {
 
 ### Test and set
 
+The test and set object sets it value to `1` and returns the old value.
+
+```javascript
+test_and_set() {
+    y = x;
+    x = 1;
+
+    return y;
+}
+
+set_state(value) {
+    x = value;
+}
+```
+
+Locking with test and set:
+
+```javascript
+lock() {
+    while 1 == test_and_set();
+}
+
+unlock() {
+    set_state(0);
+}
+```
+
 2-consensus uses two registers and a test&set object T.
 
 ```javascript
@@ -681,6 +657,30 @@ propose(value) {
 ```
 
 ### Compare and swap
+
+The c&s object compares if it's value is equal to the old value, and if it is sets the value to the new value. It return it's value before the change.
+
+```javascript
+compare_and_swap(old_value, new_value) {
+    y = x;
+    if x == old_value
+        x = new_value;
+
+    return y;
+}
+```
+
+Locking with c&s:
+
+```javascript
+lock() {
+    while LOCKED == compare_and_swap(UNLOCKED, LOCKED);
+}
+
+unlock() {
+    compare_and_swap(LOCKED, UNLOCKED);
+}
+```
 
 Unlike other mentioned objects, the compare and swap object can implement consensus with an infinite number of processes (fetch&inc, queue and test&set can implement consensus with only 2 processes).
 
