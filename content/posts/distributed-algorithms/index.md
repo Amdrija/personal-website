@@ -651,3 +651,109 @@ Combining Lemma 1 and Lemma 2, we can devise this adverserial example:
 4. Go to step 2.
 
 With this, we prove that there exists an infinite run where the algorithm never decides even if only 1 process crashes.
+
+## Terminating Reliable Broadcast
+
+Terminating reliable broadcast is a strictly stronger communication primitive than (uniform) reliable broadcast. However, unlike (uniform) reliable broadcast, every correct process delivers a message, even if the broadcaster crashes.
+
+The problem is defined for a specific broadcaster process `src` which is known by all processes.
+
+Process `src` is supposed to broadcast a message `m` (distinct from `f`). The other processes need to deliver `m` if `src` is correct, but may deliver `f` if `src` crashes.
+
+1. Integrity: If a process delivers a message `m`, then either `m` is `f` or `m` was broadcast by `src`.
+2. Validity: If the sender `src` is correct and braodcasts a message `m`, then `src` eventually delivers `m`.
+3. (Uniform) Aggreement: For any message `m`, if a correct (any) process delivers `m`, then every correct (any) process delivers `m`
+4. Termination: Every correct process eventually delivers exactly one message.
+
+```
+Implements: trbBroadcast (trb)
+Uses:
+    BestEffortBroadcast (beb)
+    PerfectFailureDetector (P)
+    Conensus (cons)
+
+upon event <Init> do
+    prop := nil
+    correct := S;
+
+upon event <trbBroadcast, m> do
+    trigger <bebBroadcast, m>;
+
+upon event <crash, src> and (prop = nil) do
+    prop := f;
+
+upon event <bebDeliver, src, m> and (prop = nil) do
+    prop := m;
+
+upon event (prop != nil) do
+    trigger <Propose, prop>;
+
+upon event <Decide, decision> do
+    trigger <trbDeliver, src, decision>;
+```
+
+To implement Uniform Terminating Reliable Broadcast, we can use the same implementation, but just use Uniform Consensus primitive instead.
+
+### A perfect failure detector is necessary to implement Terminating Reliable Broadcast
+
+Proof: If we prove that there is an algorithm that implements a prefect failure detector P by using terminating reliable broadcast, then they would be equivalent problems (as we can implement one by using the other).
+
+We assume that every process `pi` can use an infinite number of instances of TRB where `pi` is the sender `src`.
+
+1. Every process `pi` keeps on trbBroadcasting messages `mi1`, `mi2`, etc.
+2. If a process `pk` delivers `f`, then `pk` suspects `pi`
+
+## Non-Blocking Atomic Commit
+
+A transaction is an atomic program describing a sequence of accesses to shared and distributed information. A transaction can be terminated either by commiting or aborting.
+
+Similarly to consensus, every process proposes a value `1` (yes) or `0` (no) and must decide on a final value `0` (abort) or `1` (commit). However, unlike consensus, the processes seek to decide `1` but every process has a veto right.
+
+1. Agreement: No two processes decide differently
+2. Termination: EVery correct process eventually decides
+3. Commit-Validity: `1` can only be decided if all processes propose `1`
+4. Abort-Validity: `0` can only be decided if some process crashes or proposes `0`.
+
+According to these rules, if a process which proposed `1` crashes, then we can decide either `1` or `0`. Which is ok, since that process promised to "commit" the transaction after getting a decision, meaning that it saved details of the transaction to some permanent storage, so that even if it crashes, it can commit the transaction upon restart.
+
+There was a 2-phase commit algorithm, which used a coordinator process which was waiting for the proposals of other process or to detect their crashe and then it decides. Upon making a decision, it would broadcast it to other processes. However, if this coordinator process crashes before deciding or broadcasting a message to every process, some processes may not receive the decision, which makes them block forever.
+
+Afterwards, the creator of Paxos (Leslie Lamport) and the creator of 2-Phase commit (Jim Gray) wrote a paper that properly implements Non-Blocking Atomic Commit. Here's the algorithm:
+
+```
+Implements: NonBlockingAtomicCommit (nbac)
+Uses:
+    BestEffortBroadcast (beb)
+    PerfectFailureDetector (P)
+    UniformConsensus (ucons)
+
+upon event <Init> do
+    prop := 1;
+    delviered := ∅;
+    correct := S;
+
+upon event <crash, pi> do
+    correct := correct \ {pi};
+
+upon event <Propose, v> do
+    trigger <bebBroadcast, v>;
+
+upon event <bebDeliver, pi, v> do
+    delivered := delivered U {pi};
+    prop := prop * v; //so it either is 0 or 1
+
+upon event correct ⊆ delivered do
+    if correct != S
+        prop := 0;
+
+    trigger <uncPropose, prop>;
+
+upon event <uncDecide, decision> do
+    trigger <Decide, decision>;
+```
+
+We cannot use an eventually perfect failure detector, as all processes could propose `1` and one process - `p1` could be falsely suspected by all the other processes before they get `p1`'s proposals, meaning that these processes will propose `0` and the uniform consensus will decide `0`, even though no processes crashed or no processes proposed `0`, violating the abort-validity property.
+
+A perfect failure detector is needed if 1 process can crash.
+
+Proof: implement a perfect failure detector by using the NBAC.
