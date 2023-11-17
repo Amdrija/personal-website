@@ -710,7 +710,7 @@ A transaction is an atomic program describing a sequence of accesses to shared a
 Similarly to consensus, every process proposes a value `1` (yes) or `0` (no) and must decide on a final value `0` (abort) or `1` (commit). However, unlike consensus, the processes seek to decide `1` but every process has a veto right.
 
 1. Agreement: No two processes decide differently
-2. Termination: EVery correct process eventually decides
+2. Termination: Every correct process eventually decides
 3. Commit-Validity: `1` can only be decided if all processes propose `1`
 4. Abort-Validity: `0` can only be decided if some process crashes or proposes `0`.
 
@@ -757,3 +757,189 @@ We cannot use an eventually perfect failure detector, as all processes could pro
 A perfect failure detector is needed if 1 process can crash.
 
 Proof: implement a perfect failure detector by using the NBAC.
+
+## Group Membership
+
+Group Membership is a stronger abstraction than a failure detector, because it coordinates "failure detection" between the processes. Consider these two examples:
+
+Failure detector:
+
+![Failure detector inconsistency example](images/group-membership-example-failure-detector.png)
+
+Group membership:
+
+![Group membership example](images/group-membership-example.png)
+
+Here we will focus only on the coordination of crash information, however, a group membership abstraction can also be used to coordinate the explicit join and leave of processes.
+
+### Properties
+
+1. Local Monotonicity: If a process `p` install a view `V(j, M)` after installing view `V(k, N)` then `j > k` and `M ⊆ N`.
+2. Agreement: No two processes install views `V(j, M)` and `V(j, M')` such that `M != M'`.
+3. Completeness: If a process `p` crashes, then there is an integer `j` such that every correct process eventually installs view `V(j,M)` such that `p ∉ M`.
+4. Accuracy: If some process installs a view `V(i,M)` and `p ∉ M`, then `p` has crashed.
+
+```
+Implements: groupMembership (gmp)
+Uses:
+    PerfectFailureDetector (P)
+    UniformConsensus (ucons)
+
+upon event <Init> do
+    view := (0, S);
+    correct := S;
+    wait := true;
+
+upon event <crash, pi> do
+    correct := correct \ {pi};
+
+//strict subset here
+upon event (correct ⊂ view.memb) and (wait = false) do
+    wait := true;
+    trigger <ucPropose, (view.id + 1, correct)>;
+
+upon event <ucDecided, (id, memb)> do
+    view := (id, memb);
+    wait := false;
+    trigger <membView, view>;
+```
+
+## View Synchrony
+
+View synchronous broadcast is an abstraction that results from the combination of group membership and reliable broadcast. It ensures that the delivery of messages is coordinated with the installation of views.
+
+There is a subtle problem when combining group membership and reliable broadcast primitives. Namely, it is possible that a message from a crashed process is delivered after a view which expelled that process is installed. In that case, it seems counter-intuitive that you have to process such a message. View synchronous broadcast solves that problem.
+
+![Group membership and broadcast](images/group-membership-and-broadcast.png)
+
+### Properties
+
+1. View Inclusion: If some process delivers a message `m` from process `p` in view `V`, then `m` was broadcast by `p` in `V`.
+
+Same as group membership:
+
+2. Local Monotonicity: If a process `p` install a view `V(j, M)` after installing view `V(k, N)` then `j > k` and `M ⊆ N`.
+3. Agreement: No two processes install views `V(j, M)` and `V(j, M')` such that `M != M'`.
+4. Completeness: If a process `p` crashes, then there is an integer `j` such that every correct process eventually installs view `V(j,M)` such that `p ∉ M`.
+5. Accuracy: If some process installs a view `V(i,M)` and `p ∉ M`, then `p` has crashed.
+
+Same as reliable broadcast:
+
+6. Validity: If `pi` and `pj` are correct, then every message broadcast by `pi` is eventually delivered by `pj`
+7. No duplication: No message is delivered more than once.
+8. No creation: No message is delivered unless it was broadcast
+9. Agreement: For any message `m`, if any correct process delivers `m`, then every correct process delivers `m`.
+
+If the application keeps `vsBroadcasting` messages, the view synchrony abstraction might never be able to `vsInstall` a new view. The abstraction would be impossible to implement. We introduce a specific event for the abstraction to block the application from `vsBroadcasting` messages. This only happens when a process crashes.
+
+```
+Implements: ViewSyncrhony (vs)
+Uses:
+    GroupMembership (gmp)
+    TerminatingReliableBroadcast (trb)
+    BestEffortBroadcast (beb)
+
+upon event <Init> do
+    view := (0,S);
+    nextView := ⊥;
+    pending := delivered := trbDone := ∅;
+    flushing := blocked := false;
+
+upon event <vsBroadcast, m> and (blocked = false) do
+    delivered := delivered U {m};
+    trigger <vsDeliver, self, m>;
+    trigger <bebBroadcast, [Data, view.id, m]>;
+
+upon event <bebDeliver, src, [Data, viewId, m]> do
+    if (view.id = viewId) and (m ∉ delivered) and (blocked = false) then
+        delivered := delivered U {m};
+        trigger <vsDeliver, src, m>;
+
+upon event <membView, V> do
+    addToTail(pending, V);
+
+upon (pending != ∅) and (flushing = false) do
+    nextView := removeFromHead(pending);
+    flushing := true;
+    trigger <vsBlock>;
+
+upon event <vsBlockOk> do
+    blocked := true;
+    trbDone = ∅;
+    trigger <trbBroadcast, self, (view.id, delivered)>;
+
+upon event <trbDeliver, p, (viewId, del)> do
+    trbDone := trbDone U {p};
+    forall m ∈ del and m ∉ delivered do
+        delivered := delivered U {m};
+        trigger <vsDeliver, src, m>;
+
+upon (trbDone = view.memb) and (blocked = true) do
+    view := nextView;
+    flushing := blocked := false;
+    delivered := ∅;
+    trigger <vsView, view>;
+```
+
+The flushing will block the deliver of new messages once the view installation process starts. The messages that arrive in the meantime are discarded. However, any message which was broadcast in the previous view and which wasn't delivered will be rebroadcast with TRB and then eveantually `vsDelivered` by each process. Therefore this is not a problem.
+
+Still, the algorithm has to add new views to the pending queue for processing the views once the current one is done, in ordered not to lose any views.
+
+This algorithm is very inefficient, because it needs to run a TRB for every process. It is possible to simplify it by unpacking the TRB and Group membership primitives. Roughly, the processes exchange the messages they have delivered when they detect a failure, and use consensus to agree on the membership and the message set.
+
+```
+Implements: ViewSynchrony (vs)
+Uses:
+    UniformConsensus (uc)
+    BestEffortBroadcast (beb)
+    PerfectFailureDetector (P)
+
+upon event <Init> do
+    view := (0,S);
+    correct := S;
+    flushing := blocked := false;
+    delivered := dset := ∅;
+
+upon event <vsBroadcast, m> and (blocked = false) do
+    delivered := delivered U {m};
+    trigger <vsDeliver, self, m>;
+    trigger <bebBroadcast, [Data, view.id, m]>;
+
+upon event <bebDeliver, src, [Data, viewId, m]> do
+    if (view.id = viewId) and (m ∉ delivered) and (blocked = false) then
+        delivered := delivered U {m};
+        trigger <vsDeliver, src, m>;
+
+upon event <crash, p> then
+    correct := correct \ {p};
+
+    if flushing = false then
+        flushing := true;
+        trigger <vsBlock>;
+
+upon event <vsBlockOk> do
+    blocked := true;
+    trigger <bebBroadcast, [DSET, view.id, delivered]>;
+
+upon event <bebDeliver, src, [DSET, viewId, del]> do
+    dset := dset U (src, del);
+    
+    // The (p,mset) ∈ dset part is so that we make sure
+    // we have gotten a DSET message for all the correct
+    // processes, meaning that they are all in the blocking
+    // phase and will not deliver other messages.
+    if forall p ∈ correct such that (p, mset) ∈ dset then
+        trigger <ucPropose, view.id + 1, correct, dset>;
+
+upon event <ucDecided, id, memb, vsdset> do
+    forall (p, mset) ∈ vsdset such that p ∈ memb do
+        forall (src, m) ∈ mset such that m ∉ delivered do
+            delivered := delivered U {m};
+            trigger <vsDeliver, src, m>;
+
+    view := (id, memb);
+    flushing := blocked := false;
+    dset := delivered := ∅;
+
+    trigger <vsView, view>;
+```
