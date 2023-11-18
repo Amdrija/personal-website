@@ -697,3 +697,94 @@ propose(value) {
     }
 }
 ```
+
+## Universal Instructions
+
+A type `T` is universal if, together with registers, instances of `T` can be used to provide a wait-free linearizable implementation of any other type (with a sequential specification).
+
+Such an implementation is called a universal construction.
+
+### Consensus
+
+Theorem 1: Consensus is universal.
+
+Corollary 1: Compare and swap is universal.
+
+Corollary 2: Test and set is universal in a system of 2 processes (it has consensus number 2).
+
+Corollary to FLP/LA: Register is not universal in a system of at least 2 processes.
+
+First we will consider deterministic objects and then non-deterministic ones. An object is deterministic if the result and final state of any operation depend only on the initial state and the arguments of the operation.
+
+We give an algorithm where every process has a copy of the object (inherent for wait-freedom) and where processes communicate through registers and consensus objects (linearizability).
+
+The processes share a (possibly infinite) array of MRSW registers `Lreq` used to inform all processes about which requests need to be performed.
+
+The processes also share a consensus list `Lcons` (also of infinite size) that is used to ensure that the processes agree on a total order to perform the requests on their local copies. We use an ordered list of consensus objects where each objects is uniquely identified by an integer. Every consensus objects is used to agree on a set of requests (the integer is associated to this set).
+
+The algorithm combines the shared registers `Lreq[i]` and the consensus object list `Lcons` to ensure that:
+
+- Every request invoked by a correct process is performed and a result is eventually returned (wait-free)
+- Requests are executed in the same total order at all processes (i.e., there is a linearization point)
+- This order reflects the real-time order (the linearization point is within the interval of the operation)
+
+Every process also uses two local data
+structures:
+
+1. A list of requests that the process has performed (on its local copy): `lPerf`
+2. A list of requests that the process has to perform: `lInv`
+
+Every request is uniquely identified.
+
+Every process `pi` executes three tasks:
+
+1. Whenever `pi` has a new request, `pi` adds it to `Lreq[i]`.
+2. Periodically, `pi` adds the new elements of every `Lreq[j]` into `lInv`.
+3. While `(lInv - lPerf)` is not empty, `pi` performs requests using `Lcons`.
+
+### Task 3
+
+While `lInv - lPerf` is not empty:
+
+- `pi` proposes `lInv – lPerf` for a new consensus in `Lcons` (increasing the consensus integer)
+- `pi` performs the requests decided (that are not in `Lperf`) on the local copy
+- For every performed request:
+    1. `pi` returns the result if the request is in `Lreq[i]`
+    2. `pi` puts the request in `lPerf`
+
+### Corectness
+
+Lemma 1 (wait-free): Every correct process `pi` that invokes a request eventually returns from that invocation.
+
+Proof: Assume by contradiction that `pi`
+does not return from that invocation; `pi` puts the request into `Lreq` (Task 1). Eventually, every proposed `lInv - lPerf` contains this request (Task 2). Because of the termination property of consensus, eventually a consensus decision contains the request (Task 3). The result is then eventually returned (Task 3)
+
+Lemma 2 (order): The processes execute the requests in the same total order.
+
+Proof: Because processes perform operations on their local copies only when a consensus decides on a set of requests and they use the same order to perform the operations, therefore every process will execute the operations from consensus in the same order. Since the consensus objects have integers associated with them, the object will first perform operations from the consensus with a lower integer number. Thus a total order is established.
+
+Lemma 3 (real-time):  If a request `req1` precedes in real-time a request `req2`, then `req2` appears in the linearization after `req1`.
+
+Proof: It directly follows from the algorithm that the result of `req2` is based on the state of `req1`.
+
+### Non-deterministic objects
+
+An object is non-deterministic if the result and final state of an operation might differ even with the same initial state and the same arguments.
+
+Assume that a non-deterministic type `T` is defined by a relation `δ` that maps each state `s` and each request `o` to a set of pairs `(s’,r)`, where `s’` is a new state and `r` is the returned result after applying request `o` to an object of `T` in state `s`.
+
+Define a function `δ'` as follows: For any `s` and `o`, `δ'(s,o) ∈ δ(s,o)`. The type defined by `δ'` is deterministic.
+
+Every execution of the resulting (deterministic) object will satisfy the specification of `T`.
+
+### Task 3 (Non-deterministic)
+
+While `lInv – lPerf` is not empty:
+
+- `pi` produces the reply and new state (update) from request by performing: `(reply,update):= object.exec(request)`
+- `pi` proposes `(request,reply,update)` to a new consensus in `Lcons` (increasing the consensus integer) producing `(re,rep,up)`.
+- `pi` updates the local copy: `object.update(up)`.
+- `pi` returns the result if the request is in `Lreq[i]`.
+- `pi` puts `(req,rep,up)` in `lPerf`.
+
+With determinism, if the processes decide on a request, because they all have the same state before it, then they can perform the request and get the same state and response always. However, with non-deterministic algorithms, this is not possible as some objects may return different replies and different states when performing the operation from the request. In this case, instead of proposing a request, we first "speculatively" execute the operation to get one possible next state and reply. Then we propose this trio so that all processes can have the same decided state and return the decided reply.
