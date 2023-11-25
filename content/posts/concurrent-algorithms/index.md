@@ -523,9 +523,9 @@ scan() {
 
 A consensus object makes a set of processes decide on a value. It has one operation: `propose` which returns a value. When a propose oepration returns, we say that the process decides. It has 3 properties:
 
-1. Aggreement - no two processes decide different values
-2. Validity - a decided value has to have been proposed by some process.
-3. Termination - Every correct process eventually decides a value.
+1. Aggreement: No two processes decide different values
+2. Validity: A decided value has to have been proposed by some process.
+3. Termination: Every correct process eventually decides a value.
 
 ### LA (FLP) Impossibility
 
@@ -788,3 +788,194 @@ While `lInv – lPerf` is not empty:
 - `pi` puts `(req,rep,up)` in `lPerf`.
 
 With determinism, if the processes decide on a request, because they all have the same state before it, then they can perform the request and get the same state and response always. However, with non-deterministic algorithms, this is not possible as some objects may return different replies and different states when performing the operation from the request. In this case, instead of proposing a request, we first "speculatively" execute the operation to get one possible next state and reply. Then we propose this trio so that all processes can have the same decided state and return the decided reply.
+
+## Obstruction-free Consensus
+
+Instead of the termination property, Obstruction-free consensus has the Obstruction-free-termination property:
+
+1. Agreement: no two processes decide differently
+2. Validity: Any value decided must have been proposed
+3. Obstruction-free-termination: If a correct process proposes and eventually executes alone, then the process eventually decides.
+
+A note that just because the process is executing alone, doesn't mean that it will decide the value it proposed. It may decide any value proposed by any process.
+
+### Implementation
+
+Each process `pi` maintains a timestamp `ts`, initialized to `i` and incremented by `N`.
+
+The processes share an array of register pairs `Reg[1,...,N]` where each element of the array contains two registers:
+
+- `Reg[i].T` contains a timestamp (init to `0`)
+- `Reg[i].V` contains a pair `(value, timestamp)` (init to `(null, 0)`)
+
+The function `highestTsp()` returns the highest timestamp amon all elements `Reg[1,...,N].T`.
+
+The function `highestTspValue()` returns the value with the highest timestamp among all elements `Reg[1,...,N].V`.
+
+```javascript
+propose(value) {
+    while(true) {
+        Reg[i].T.write(ts);
+        val = Reg[1..N].highestTspValue();
+        if val == null {
+            val = value;
+        }
+
+        Reg[i].V.write(val, ts);
+        
+        if ts == Reg[1..N].highestTsp() {
+            return val;
+        }
+
+        ts += N;
+    }
+}
+```
+
+Because the processes first write a timestamp, then write the value and the timestamp, and then read the highest timestamp again, this means that between the `pi`'s write of the timestamp and the `highestTsp()` call nobody else has written a newer timestamp. Meaning that there isn't a newer value somebody else might read from `highestTspValue()` therefore, a process `pj` which reads after `pi` will read `pi`'s value as the newest, will write it with a new timestamp and then decide on it as well. Analougously, anybody after that process will read the `pj`'s value, which is actually `pi`'s value.
+
+Otherwise, if `pi` reads a different timestamp from `highestTsp()` call, that means that someone else wrote a new value, therefore, `pi` cannot decide, because the new value might be different from the value `val` which `pi` read.
+
+The problem with this algorithm is that it doesn't gurantee termination. There could be an execution which never terminates, because a process managed to write a "newer" timestamp before another process `pi` finishes reading `highestTsp()`. Therefore, `pi` might find a timestamp which is newer than it's own, so it must make another attempt. Then, the same could happen to other processes.
+
+## Eventual Leader Election
+
+One operation `leader()` which does not take any input parameter and returns a boolean. A process considers itself leader if the boolean
+`leader()` is `true`.
+
+If a correct process invokes `leader()`, then the invocation returns and eventually, some correct process is permanently the only leader.
+
+For the `leader()` to be implemented, we must assume an eventually synchronous system. There is a time after which there is a lower and an
+upper bound on the delay for a process to execute a local action, a read or a write in shared memory. he time after which the system becomes synchronous is called the global stabilization time (GST) and is unknown to the processes.
+
+This model captures the practical observation that distributed systems are usually synchronous and sometimes asynchronous.
+
+```javascript
+delay = 1
+check = 1
+last[1..N] = 0
+Reg[1..N] = 0
+
+leader() {
+    return leader == self;
+}
+
+//this tusk is running all the time in the background
+background_task() {
+    clock = 0;
+    while (true) {
+        if leader == self {
+            Reg[i].write(Reg[i].read() + 1);
+        }
+
+        clock++;
+
+        //only when it's time to check, you should
+        //run elect()
+        if clock == check {
+            elect();
+        }
+    }
+}
+
+elect() {
+    noLeader = true;
+    for j in range(1, i - 1) {
+        //last[j] used to check if pj made progress
+        //if it did, then it must be a new leader.
+        //if it didn't, it either crashed,
+        //it's slow (then increase delay)
+        //or it isn't a leader  at all, but some "lower"
+        //process is, but pi's delay isn't big enough
+        if Reg[j].read() > last[j] {
+            last[j] = Reg[j].read();
+            if leader != pj {
+                delay *= 2;
+            }
+
+            leader = pj;
+            noLeader = false;
+            break;
+        }
+    }
+
+    check += delay;
+
+    //if there is not leader, then
+    //elect yourself
+    if (noLeader) {
+        leader = self;
+    }
+}
+```
+
+Every process `pi` elects the process with the lowest `id` that `pi` considers as non-crashed. If `pi` elects `pj` then `j < i`.
+
+A process `pi` that considers self as a leader keeps incrementing `Reg[i]`. In other words, it is signaling other processes that it is a leader and that it is running. Eventually, only the leader keeps incrementing `Reg[i]`.
+
+Every process periodically runs the `elect()` function to see if there is a new leader. Because the processes don't know the upper bound for processing (but it will exist at some point), they have to run this function less frequently (by doubling the `delay`), so that the processes which are slow (but haven't crashed) can increment their register if they are the leader. This means that at some point, delay will be high enough for the non-crashed process with the smallest id to update it's register in time for the next check. When all the processes reach that delay, they will elect it as the leader. This process will elect itself, because every process with a smaller id must have crashed (because the delay is greater than the upper bound on the computation).
+
+## Lock-free Consensus
+
+1. Aggreement: No two processes decide differently.
+2. Validity: A decided value has to have been proposed by some process.
+3. Lock-free-termination: If a correct process proposes, then at least one correct process eventually decides.
+
+The idea is to use an eventual leader to make sure that, eventually, one process keeps executing steps alone, until that process decides.
+
+```javascript
+propose(value) {
+    while(true) {
+        if leader() {
+            Reg[i].T.write(ts);
+
+            val = Reg[1..N].highestTspValue();
+            if val == None {
+                val = value;
+            }
+
+            Reg[i].V.write(val, ts);
+
+            if ts == Reg[1..N].highestTsp() {
+                return val;
+            }
+
+            ts += N;
+        }
+    }
+}
+```
+
+Because there can be multiple leaders until eventual leader is elected, we still must rely on "optimistic locks" (the algorithm from obstruction-free consensus) to ensure that mutliple leaders don't decide differently. Eventually, due to the synchrony assumptions and the eventual leader algorithm, there will be only 1 leader and 1 process which executes the algorithm, therefore, it will decide. This fixes the case of infinite execution in the obstruction-free consensus algorithm, because eventually, the leader will terminate.
+
+However, the shortcoming of this algorithm is that when an eventual leader arises, unless it crashes, it will be the only process that decides, as it will be the only process running the algorithm. Therefore, other processes will not decide (this is why it isn't wait-free as not every process terminates).
+
+## Wait-free consensus
+
+To solve the problem of lock-free consensus, instead of deciding, the leader will write the decided value to a shared register `Dec` which everyone reads from. Once there's a value in that register, it means that the processes can stop running the algorithm and decide as well. Very elegent and simple :)
+
+```javascript
+propose(value) {
+    while(Dec.read() != null) {
+        if leader() {
+            Reg[i].T.write(ts);
+
+            val = Reg[1..N].highestTspValue();
+            if val == None {
+                val = value;
+            }
+
+            Reg[i].V.write(val, ts);
+
+            if ts == Reg[1..N].highestTsp() {
+                //write to register instead of deciding
+                Dec.write(val); 
+            }
+
+            ts += N;
+        }
+    }
+
+    return Dec.read();
+}
+```
