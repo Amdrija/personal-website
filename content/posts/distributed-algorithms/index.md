@@ -943,3 +943,137 @@ upon event <ucDecided, id, memb, vsdset> do
 
     trigger <vsView, view>;
 ```
+
+## From message passing to shared memory
+
+In this chapter, we would like to implement [registers]({{ref /posts/concurrent-algorithms}})
+
+### Regular register
+
+Properties:
+
+1. Termination: If a correct process invokes an operation, then the operation eventually completes.
+2. Validity: A read that is not concurrent with a write returns the last value written.  A read that is concurrent with a write returns the last value written or the value concurrently written.
+
+We assume only 1 writer (`pi`) and a fail-stop model with a perfect failure detector.
+
+Every process `pi` has a local copy of the register value `vi`. Every process reads locally, but the writer writes globally, i.e. at all (non-crashed) processes.
+
+```
+Implements:
+    RegularRegister (rr)
+
+Uses:
+    BestEffortBroadcast (beb)
+    PerfectLinks (pp2p)
+    PerfectFailureDetector (P)
+
+upon event <Init> do
+    val := ⊥;
+    correct := S;
+    writeset := ∅;
+
+upon event <crash, pi> do
+    correct := correct \ {pi};
+
+upon event <Read> do
+    trigger <ReadReturn, val>;
+
+upon event <Write, v> do
+    trigger <bebBroadcast, [Write, v]>;
+
+upon event <bebDeliver, pj, [Write, v]> do
+    val := v;
+    trigger <pp2pSend, pj, ACK>;
+
+upon event <pp2pDeliver, pj, ACK> do
+    writeset := writeset U {pj};
+
+upon correct ⊆ writeset do
+    writeset := ∅;
+    trigger <WriteReturn>;
+```
+
+Termination: a read is local so it eventually returns. A write eventually returns by the completeness property of the failure detector and the reliability of channels.
+
+Validity:
+
+Safety: Assume a `Write(x)` terminates and no other `Write()` is invoked. Because the `Write(x)` has terminated, the writer process detected that a process `pj` has crashed or it has received an `ACK` message from `pj`. In the first case, the process must have crashed because of the accuracy proeprty of the failure detector, so the validity doesn't apply to it, because an invoked `Read()` will not return and a subsequent `Read()` will never be able to be invoked. In the second case, `pj` has sent an `ACK`, meaning that it must have set the local register to the value `x` beforehand. Therefore, a subsequent `Read()` will return `x`.
+
+Regularity: Let's assume that there is a `Read()` concurrent with exactly 1 write and assume that the invoked `Read()` can return values other than the last written value or concurrent value. According to the algorithm, this must mean that the line `val := v` was triggered, where `v` is not one of the beforementioned values. This then must mean that there is another concurrent `Write(v)` operation happening, which is a contradiction.
+
+### Majority Algorithm
+
+In the absence of a failure detector, we need to see acks from a majority of processes. Here we assume that less than half can fail, otherwise, it is not possible to solve.
+
+Every process `pi` maintains a local copy of the register `vi`, as well as a sequence number `sni` and a read timestamp `rsi`.
+
+The writer process `p1` maintains in addition a timestamp `wts`.
+
+```
+Implements:
+    RegularRegister (rr)
+Uses:
+    BestEffortBroadcast (beb)
+    PerfectLinks (pp2p)
+
+upon event <Init> do
+    (ts, val) = (0, ⊥);
+    wts := 0;
+    acks := 0;
+    rid := 0;
+    readlist[1...N] := ⊥;
+
+upon event <Write, v> do
+    wts := wts + 1;
+    acks := 0;
+    trigger <bebBroadcast, [Write, wts, v]>;
+
+upon event <bebDeliver, pj, [Write, ts', v']> do
+    if ts' > ts then
+        (ts, val) := (ts', v');
+    trigger <pp2pSend, pj, [ACK, ts']>;
+
+upon event <pp2pDeliver, pj, [ACK, ts']> sucht that ts' = wts do
+    acks := acks + 1;
+    if acks > N / 2 then
+        acks := 0;
+        trigger <WriteReturn>;
+
+upon event <Read> do
+    rid := rid + 1;
+    readlist[1...N] := ⊥;
+    trigger <bebBroadcast, [READ, rid]>;
+
+upon event <bebDeliver, pj, [READ, r]> do
+    trigger <pp2pSend, pj, [VALUE,r,ts,val]>;
+
+upon event <pp2pDeliver, pk, [VALUE, r, ts', v']> such that r = rid do
+    readlist[pk] := (ts', v');
+    if readlist.count() > N/2 then
+        v := readlist.highestTimestampVal();
+        readlist[1...N] := ⊥;
+        trigger <ReadReturn, v>;
+```
+
+In this algorithm, the readers must communicate as well, because we don't wait for everyone to return an ack in order to finish the write. Therefore, it is possible that a process hasn't yet written a new value to the local register. To prevent this, the readers must first contact other readers for new reads. When the reader gets a majority of the processes to return their values and timestamps back, it will read the value with the newest timestamp.
+
+Termination: Any `Read()` or `Write()` will eventually return because of the assumption of majority correct processes.
+
+Safety: If a write has completed, that means that at least `N/2 + 1` processes have the new value. Then, when a reader tries to read, because it waits for a majority, it will have to get at least `N/2 + 1` timestamps and values from other processes. The intersection of these two sets must contain at least 1 process. This process will have the highest timestamp value (because there aren't any reads afterwards) and the read will then return the value written before.
+
+Regularity:  Let's assume that there is a `Read()` concurrent with exactly 1 write and assume that the invoked `Read()` can return values other than the last written value or concurrent value. According to the algorithm, this must mean that at least 1 process has a value with a higher timestamp than the value currently written. This then implies that another concurrent write is happening, in order for that process to obtain a higher timestamp. However, this is not possible.
+
+### Atomic register
+
+1. Termination: If a correct process invokes an operation, then the operation eventually completes.
+2. Validity: A read that is not concurrent with a write returns the last value written.  A read that is concurrent with a write returns the last value written or the value concurrently written.
+3. Ordering: If a read returns a value `v` and a subsequent read returns a value `w`, then the write of `w` does not precede the write of `v`.
+
+Unfortunately, none of these 2 algorithms is atomic, because it is possible to have a read-read inversion if a write is slow.
+
+In the first algorithm, let's have 1 writer process and 2 readers. If the writer updates only the reader `r1`, then `r1` returns the new value. Afterwards, if `r2` tries to read while the message from the writer didn't get to `r2`, `r2` will return the old value.
+
+It's similar in the second algorithms, let's assume 5 processes, 1 writer and 4 readers, where the write has only managed to get to the reader `r1`. When `r1` reads, it will send the message to everyone else and will get a majority, but since it already has the highest timestamp, it will return the new value. Afterwards, `r2` starts reading and it get's responses from `r3` and `r4` (and not from `w` and `r1`). Since the write only got to `r1`, this means that `r2`, `r3` and `r4` will all have the same old value with the same lower timestamp. This means that `r2` will return the old value.
+
+In order to fix this, we must read globally.
