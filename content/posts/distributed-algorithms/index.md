@@ -946,7 +946,7 @@ upon event <ucDecided, id, memb, vsdset> do
 
 ## From message passing to shared memory
 
-In this chapter, we would like to implement [registers]({{< ref "concurrent-algorithms" >}})
+In this chapter, we would like to implement [registers]({{< ref "concurrent-algorithms#registers" >}})
 
 ### Regular register
 
