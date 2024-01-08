@@ -330,7 +330,7 @@ upon event <rbDeliver, pi, [Data, past_m, m]> do
 
 ### Waiting Causal Broadcast
 
-Instead of sending the past of all the messages, we can just send a vector which contains as the i<sup>th<sup> element the sequence number of the message from process p<sub>i</sub> that the broadcasted message depends on.
+Instead of sending the past of all the messages, we can just send a vector which contains as the i<sup>th</sup> element the sequence number of the message from process p<sub>i</sub> that the broadcasted message depends on.
 
 For example: we have 3 processes, each will have the vector initialized to `[0,0,0]`. When process p<sub>1</sub> broadcasts a message, it will send the vector `[0,0,0]`, and it will change its vector to `[1,0,0]`. Now, when the same process broadcasts a message, it will send a vector `[1,0,0]` with the message. The process p<sub>3</sub> then delivers both messages, it will now send the vector `[2, 0, 0]` and change its vector to `[2, 0, 1]` etc.
 
@@ -591,7 +591,7 @@ A run represents a walk through a big (possibly infinite) directed graph, with v
 
 Types of configurations:
 
-- 0-valent: ll possible sequences of message deliveries lead to the all-zero outcome
+- 0-valent: all possible sequences of message deliveries lead to the all-zero outcome
 - 1-valent: all possible sequences of message deliveries lead to the all-one outcome
 - bivalent: neither 0-valent nor 1-valent configuration.
 
@@ -662,7 +662,7 @@ Process `src` is supposed to broadcast a message `m` (distinct from `f`). The ot
 
 1. Integrity: If a process delivers a message `m`, then either `m` is `f` or `m` was broadcast by `src`.
 2. Validity: If the sender `src` is correct and braodcasts a message `m`, then `src` eventually delivers `m`.
-3. (Uniform) Aggreement: For any message `m`, if a correct (any) process delivers `m`, then every correct (any) process delivers `m`
+3. (Uniform) Aggreement: For any message `m`, if a correct (any) process delivers `m`, then every correct process delivers `m`
 4. Termination: Every correct process eventually delivers exactly one message.
 
 ```
@@ -1002,7 +1002,9 @@ Safety: Assume a `Write(x)` terminates and no other `Write()` is invoked. Becaus
 
 Regularity: Let's assume that there is a `Read()` concurrent with exactly 1 write and assume that the invoked `Read()` can return values other than the last written value or concurrent value. According to the algorithm, this must mean that the line `val := v` was triggered, where `v` is not one of the beforementioned values. This then must mean that there is another concurrent `Write(v)` operation happening, which is a contradiction.
 
-### Majority Algorithm
+This algorithm also implements a (1,1)-Atomic register, but it is not atomic in the general case (explanation below).
+
+### Regular register - Majority Algorithm
 
 In the absence of a failure detector, we need to see acks from a majority of processes. Here we assume that less than half can fail, otherwise, it is not possible to solve.
 
@@ -1060,7 +1062,7 @@ In this algorithm, the readers must communicate as well, because we don't wait f
 
 Termination: Any `Read()` or `Write()` will eventually return because of the assumption of majority correct processes.
 
-Safety: If a write has completed, that means that at least `N/2 + 1` processes have the new value. Then, when a reader tries to read, because it waits for a majority, it will have to get at least `N/2 + 1` timestamps and values from other processes. The intersection of these two sets must contain at least 1 process. This process will have the highest timestamp value (because there aren't any reads afterwards) and the read will then return the value written before.
+Safety: If a write has completed, that means that at least `N/2 + 1` processes have the new value. Then, when a reader tries to read, because it waits for a majority, it will have to get at least `N/2 + 1` timestamps and values from other processes. The intersection of these two sets must contain at least 1 process. This process will have the highest timestamp value (because there aren't any writes afterwards) and the read will then return the value written before.
 
 Regularity:  Let's assume that there is a `Read()` concurrent with exactly 1 write and assume that the invoked `Read()` can return values other than the last written value or concurrent value. According to the algorithm, this must mean that at least 1 process has a value with a higher timestamp than the value currently written. This then implies that another concurrent write is happening, in order for that process to obtain a higher timestamp. However, this is not possible.
 
@@ -1070,10 +1072,332 @@ Regularity:  Let's assume that there is a `Read()` concurrent with exactly 1 wri
 2. Validity: A read that is not concurrent with a write returns the last value written.  A read that is concurrent with a write returns the last value written or the value concurrently written.
 3. Ordering: If a read returns a value `v` and a subsequent read returns a value `w`, then the write of `w` does not precede the write of `v`.
 
-Unfortunately, none of these 2 algorithms is atomic, because it is possible to have a read-read inversion if a write is slow.
+Unfortunately, none of these 2 algorithms implements a (1,N)-Atomic register, because it is possible to have a read-read inversion if a write is slow.
 
 In the first algorithm, let's have 1 writer process and 2 readers. If the writer updates only the reader `r1`, then `r1` returns the new value. Afterwards, if `r2` tries to read while the message from the writer didn't get to `r2`, `r2` will return the old value.
 
 It's similar in the second algorithms, let's assume 5 processes, 1 writer and 4 readers, where the write has only managed to get to the reader `r1`. When `r1` reads, it will send the message to everyone else and will get a majority, but since it already has the highest timestamp, it will return the new value. Afterwards, `r2` starts reading and it get's responses from `r3` and `r4` (and not from `w` and `r1`). Since the write only got to `r1`, this means that `r2`, `r3` and `r4` will all have the same old value with the same lower timestamp. This means that `r2` will return the old value.
 
 In order to fix this, we must read globally.
+
+The next algorithm is called Read-Impose Write-All and it implements a (1, N)-Atomic Register.
+
+```
+Implements:
+    (1, N)-AtomicRegister (onar);
+
+Uses:
+    BestEffortBroadcast (beb);
+    PerfectPointToPointLinks (pl);
+    PerfectFailureDetector (P);
+
+upon event <onar, Init> do
+    (ts, val) := (0, ⊥);
+    correct := Π;
+    writeset := ∅;
+    readval := ⊥;
+    reading := FALSE;
+
+upon event <crash, p> do
+    correct := correct \ {p};
+
+upon event <onar, Read> do
+    reading := TRUE;
+    readval := val;
+    trigger <bebBroadcast, [WRITE , ts, val]>;
+
+upon event <onar, Write, v> do
+    trigger <bebBroadcast, [WRITE , ts + 1, v]>;
+
+upon event <bebDeliver, p, [WRITE , ts′, v′]> do
+    if ts′ > ts then
+        (ts, val) := (ts′, v′);
+    trigger <plSend, p, [ACK]>;
+
+upon event <plDeliver, p, [ACK]> then
+    writeset := writeset ∪ {p};
+
+upon correct ⊆ writeset do
+    writeset := ∅;
+    if reading = TRUE then
+        reading := FALSE;
+        trigger <onarReadReturn, readval>;
+    else
+        trigger <onar, WriteReturn>;
+```
+
+Correctness. The termination and validity properties are ensured in the same way as in the “Read-One Write-All” algorithm (Algorithm 4.1). Consider now ordering and assume process `p` writes a value `v`, which is associated to some timestamp `tsv`, and subsequently writes a value `w`, associated to some timestamp `tsw > tsv` . Assume, furthermore, that some process `q` reads `w` and, later on, some other process `r` invokes another read operation. At the time when `q` completes its read, all processes that did not crash have a timestamp variable `ts` that is at least `tsw` . According to the algorithm, there is no way for `r` to change its value to `v` after this time because `tsv < tsw`.
+
+### Atomic register - Majority Algorithm
+
+The algorithm is called “Read-Impose Write-Majority”. The implementation of the write operation is similar to that of the “Majority Voting” algorithm: the writer simply makes sure a majority adopts its value. The implementation of the read operation is different, however. A reader selects the value with the largest timestamp from a majority, as in the “Majority Voting” algorithm, but now also imposes this value and makes sure a majority adopts it before completing the read operation: this is the key to ensuring the ordering property of an atomic register.
+
+```
+Implements:
+    (1, N)-AtomicRegister (onar);
+
+Uses:
+    BestEffortBroadcast (beb);
+    PerfectPointToPointLinks (pl);
+
+upon event <onar, Init> do
+    (ts, val) := (0, ⊥);
+    wts := 0;
+    acks := 0;
+    rid := 0;
+    readlist := [⊥; N];
+    readval := ⊥;
+    reading := FALSE;
+
+upon event <onar,Read> do
+    rid := rid + 1;
+    acks := 0;
+    readlist := [⊥; N];
+    reading := TRUE;
+    trigger <bebBroadcast, [READ, rid]>;
+
+upon event <bebDeliver, p, [READ, r]> do
+    trigger <plSend, p, [VALUE, r, ts, val]>;
+
+upon event <plDeliver, q, [VALUE, r, ts′, v′]> such that r = rid do
+    readlist[q] := (ts′, v′);
+    if #(readlist) > N/2 then
+        (maxts, readval) := highest(readlist);
+        readlist := [⊥; N];
+        trigger <bebBroadcast, [WRITE, rid, maxts, readval]>;
+
+upon event <onar, Write, v> do
+    rid := rid + 1;
+    wts := wts + 1;
+    acks := 0;
+    trigger <bebBroadcast, [WRITE, rid, wts, v]>;
+
+upon event <bebDeliver, p, [WRITE, r, ts′, v′]> do
+    if ts′ > ts then
+        (ts, val) := (ts′, v′);
+    trigger <plSend, p, [ACK, r]>;
+
+upon event <plDeliver, q, [ACK , r]> such that r = rid do
+    acks := acks + 1;
+    if acks > N/2 then
+        acks := 0;
+        if reading = TRUE then
+            reading := FALSE;
+            trigger <onar, ReadReturn, readval>;
+        else
+            trigger <onar, WriteReturn>;
+```
+
+Correctness. The termination and validity properties are ensured in the same way as in Algorithm “Majority Voting”. Consider now the ordering property. Suppose that a read operation `or` by process `r` reads a value `v` from a write operation `ov` of process `p` (the only writer), that a read operation `oq` by process `q` reads a different value `w` from a write operation `ow` , also by process `p`, and that `or` precedes `oq`. Assume by contradiction that `ow` precedes `ov` . According to the algorithm, the timestamp `tsv` that `p` associated with `v` is strictly larger than the timestamp `tsw` that `p` associated with `w`. Given that the operation `or` precedes `oq` , at the time when `oq` was invoked, a majority of the processes has stored a timestamp value in `ts` that is at least `tsv` , the timestamp associated to `v`, according to the write-back part of the algorithm for reading `v`. Hence, process `q` cannot read `w`, because the timestamp associated to `w` is strictly smaller than `tsv`. A contradiction.
+
+### (N,N) Atomic Register
+
+1. Termination: If a correct process invokes an operation, then the operation eventually completes.
+2. Atomicity: Every read operation returns the value that was written most recently in a hypothetical execution, where every failed operation appears to be complete or does not appear to have been invoked at all, and every complete operation appears to have been executed at some instant between its invocation and its completion.
+
+The problem of the (1,N) algorithm is that two writers could write the same timestamp, therefore, there needs to be a tie-breaker (i.e. process rank) so that all processes will return the same value when faced with two of the same timestamp.
+
+```
+Implements:
+    (N, N)-AtomicRegister, instance nnar.
+
+Uses:
+    BestEffortBroadcast (beb);
+    PerfectPointToPointLinks (pl);
+    PerfectFailureDetector (P).
+
+upon event <nnar, Init> do
+    (ts, wr, val) := (0, 0, ⊥);
+    correct := Π;
+    writeset := ∅;
+    readval := ⊥;
+    reading := FALSE;
+
+upon event <crash, p> do
+    correct := correct \ {p};
+
+upon event <nnar, Read> do
+    reading := TRUE;
+    readval := val;
+    trigger <bebBroadcast, [WRITE , ts, wr, val]>;
+
+upon event <nnar, Write, v> do
+    trigger <bebBroadcast, [WRITE, ts + 1, rank(self), v]>;
+
+upon event <bebDeliver, p, [WRITE, ts′, wr′, v′]> do
+    if (ts′, wr′) is larger than (ts, wr) then
+        (ts, wr, val) := (ts′, wr′, v′);
+    trigger <plSend, p, [ACK]>;
+
+upon event <plDeliver, p, [ACK]> then
+    writeset := writeset ∪ {p};
+
+upon correct ⊆ writeset do
+    writeset := ∅;
+    if reading = TRUE then
+        reading := FALSE;
+        trigger <nnar, ReadReturn, readval>;
+    else
+        trigger <nnar, WriteReturn>;
+```
+
+## Distributed Computing with Byzantine Failures
+
+A process is said to fail in an arbitrary manner if it may deviate in any conceivable way from the algorithm assigned to it. The arbitrary-fault behavior is the most general one. When we use it, we make no assumptions on the behavior of faulty processes, which are allowed any kind of output and, therefore, can send any kind of message. Such failures are also called Byzantine for historical reasons (see the notes at the end of this chapter) or malicious failures.
+
+With the byzantine failure model, we can tolerate at mosst 33% of failed processes. In other words, if `f` processes can fail, we need at least `3f + 1` processes and need a `2f + 1` majority. This is because in a `2f + 1` majority, where `f` processes could be faulty would intersect in at least 1 correct process - there are `f + 1` correct processes in the byzantine majority and `f` correct proccesses outside of it. If both majorities had different `f` correct proccesses outside, that means that there are different `f` correct processes in the `f + 1` correct processes in the majority. That leaves 1 process which is the same in both majorities. Therefore, if the majority was smaller than `2f + 1`, say `2f`, it would be possible for two majorities not to intersect and therefore partition the network.
+
+### Byzantine Consistent Broadcast
+
+1. Validity: If a correct process `p` broadcasts a message `m`, then every correct process eventually delivers `m`.
+2. No duplication: Every correct process delivers at most one message.
+3. Integrity: If some correct process delivers a message `m` with sender `p` and process `p` is correct, then `m` was previously broadcast by `p`.
+4. Consistency: If some correct process delivers a message `m` and another correct process delivers a message `m′`, then `m = m′`.
+
+In this abstraction, it is possible that the sender is faulty, therefore, it may only broadcast a message to a subset of the processes, or it may send each process a different message. If s is faulty then the primitive ensures that every correct process delivers the same message, if it delivers one at all. In other words, with a faulty sender, some correct processes may deliver a message and others may not, but if two correct processes deliver a message, it is unique.
+
+### Authenticated Echo Broadcast
+
+```
+Implements:
+    ByzantineConsistentBroadcast (bcb), with sender s;
+
+Uses:
+    AuthPerfectPointToPointLinks (al);
+
+upon event <bcb, Init> do
+    sentecho := FALSE;
+    delivered := FALSE;
+    echos := [⊥; N] ;
+
+upon event <bcbBroadcast, m> do // only process s
+    forall q ∈ Π do
+    trigger <alSend, q, [SEND, m]>;
+
+upon event <alDeliver, p, [SEND, m]> such that p = s and sentecho = FALSE do
+    sentecho := TRUE;
+    forall q ∈ Π do
+    trigger <alSend, q, [ECHO, m]>;
+
+upon event <alDeliver, p, [ECHO, m]> do
+    if echos[p] = ⊥ then
+        echos[p] := m;
+
+upon exists m != ⊥ such that #({p ∈ Π | echos[p] = m}) > (N + f) / 2 and delivered = FALSE do
+    delivered := TRUE;
+    trigger <bcbDeliver, s, m>;
+```
+
+Correctness: The algorithm implements a Byzantine consistent broadcast abstraction for `N > 3f`. The validity property follows from the algorithm because if the sender is correct, then every correct process al-sends an ECHO message and every correct process al-delivers at least `N − f` of them. Because `N − f > (N + f)/2` under the assumption that `N > 3f`, every correct process also bcb-delivers the message `m` contained in the ECHO messages.
+
+The no duplication and integrity properties are straightforward to verify from the
+algorithm.
+
+The consistency property follows from the observation that in order for a correct process `p` to bcb-deliver some `m`, it needs to receive (i.e., to al-deliver) more than`(N + f)/2` ECHO messages containing `m`. A set of more than `(N + f)/2` processes corresponds to a Byzantine quorum of processes. Recall that every two Byzantine quorums overlap in at least one correct process. Consider a different correct process `p′` that bcb-delivers some `m′`. As `p′` has received a Byzantine quorum of ECHO messages containing `m′`, and because the correct process in the intersection of the two Byzantine quorums sent the same ECHO message to `p` and to `p′`, it follows that `m = m′`.
+
+### Signed Echo Broadcast
+
+Compared to the “Authenticated Echo Broadcast” algorithm of the previous section, it uses digital signatures and sends fewer messages over the underlying authenticated links abstraction: only a linear number of messages instead of a quadratic number (in N). The basic idea is the same, however, in that the sender s first disseminates a message `m` to all processes and expects a Byzantine quorum of processes to witness for the act of broadcasting `m`. In contrast to Algorithm 3.16, the witnesses authenticate a request not by sending an E CHO message to all processes but by signing a statement to this effect, which they return to the sender `s`. Process `s` then collects a Byzantine quorum of these signed statements and relays them in a third communication step to all processes.
+
+```
+Implements:
+    ByzantineConsistentBroadcast (bcb), with sender s;
+Uses:
+    AuthPerfectPointToPointLinks (al).
+
+upon event <bcb, Init> do
+    sentecho := FALSE;
+    sentfinal := FALSE;
+    delivered := FALSE;
+    echos := [⊥; N]; 
+    Σ := [⊥; N];
+
+upon event <bcbBroadcast, m> do // only process s
+    forall q ∈ Π do
+        trigger <alSend, q, [SEND, m]>;
+
+upon event <alDeliver, p, [SEND, m]> such that p = s and sentecho = FALSE do
+    sentecho := T RUE;
+    σ := sign(self, bcb‖self‖ECHO‖m);
+    trigger <alSend, s, [ECHO, m, σ]>;
+
+upon event <alDeliver, p, [ECHO, m, σ]> do // only process s
+    if echos[p] = ⊥ and verifysig(p, bcb‖p‖ECHO‖m, σ) then
+        echos[p] := m; 
+        Σ[p] := σ;
+
+upon exists m != ⊥ such that #({p ∈ Π | echos[p] = m}) > (N + f) / 2 and sentfinal = FALSE do
+    sentfinal := TRUE;
+    forall q ∈ Π do
+        trigger <alSend, q, [FINAL, m, Σ]>;
+
+upon event <alDeliver, p, [FINAL, m, Σ]> do
+    if #({p ∈ Π | Σ[p] != ⊥ and verifysig(p, bcb‖p‖ECHO‖m, Σ[p])}) > (N + f) / 2 and delivered = FALSE do
+        delivered := TRUE;
+        trigger <bcbDeliver, s, m>;
+```
+
+The algorithm itself is pretty similar to the "Authenticated Echo Broadcast" algorithm, except that it uses the signatures to get the quorum instead of broadcasting echo messages. Hence, the correctness arguments are similar.
+
+### Byzantine Reliable Broadcast
+
+1. Validity: If a correct process `p` broadcasts a message `m`, then every correct process eventually delivers `m`.
+2. No duplication: Every correct process delivers at most one message.
+3. Integrity: If some correct process delivers a message `m` with sender `p` and process `p` is correct, then `m` was previously broadcast by `p`.
+4. Consistency: If some correct process delivers a message `m` and another correct process delivers a message `m′`, then `m = m′`.
+5. Totality: If some message is delivered by any correct process, every correct
+process eventually delivers a message.
+
+Combining the consistency and totality properties yields the same requirement as the agreement property of reliable broadcast.
+
+```
+Implements:
+    ByzantineReliableBroadcast (brb) with sender s.
+
+Uses:
+    AuthPerfectPointToPointLinks (al).
+
+upon event <brb, Init> do
+    sentecho := FALSE;
+    sentready := FALSE;
+    delivered := FALSE;
+    echos := [⊥; N];
+    readys := [⊥; N];
+
+upon event <brbBroadcast, m> do // only process s
+    forall q ∈ Π do
+        trigger <alSend, q, [SEND, m]>;
+
+upon event <alDeliver, p, [SEND, m]> such that p = s and sentecho = FALSE do
+    sentecho := TRUE;
+    forall q ∈ Π do
+        trigger <alSend, q, [ECHO, m]>;
+
+upon event <alDeliver, p, [ECHO, m]> do
+    if echos[p] = ⊥ then
+        echos[p] := m;
+
+upon exists m ! = ⊥ such that #({p ∈ Π | echos[p] = m}) > (N + f) / 2 and sentready = FALSE do
+    sentready := TRUE;
+    forall q ∈ Π do
+        trigger <alSend, q, [READY, m]>;
+
+upon event <alDeliver, p, [READY, m]> do
+    if readys[p] = ⊥ then
+        readys[p] := m;
+
+upon exists m ! = ⊥ such that #({p ∈ Π | readys[p] = m}) > f and sentready = FALSE do
+    sentready := TRUE;
+    forall q ∈ Π do
+        trigger <alSend, q, [READY, m]>;
+
+upon exists m ! = ⊥ such that #({p ∈ Π | readys[p] = m}) > 2f and delivered = FALSE do
+    delivered := TRUE;
+    trigger <brbDeliver, s, m>;
+```
+
+Correctness. The algorithm implements a Byzantine reliable broadcast abstraction whenever `N > 3f`. The validity, no duplication, and integrity properties follow from the same arguments as in “Authenticated Echo Broadcast”.
+
+For arguing about the consistency property, note that the consistency property of “Authenticated Echo Broadcast” implies that if some of the correct processes al-send a READY message, they all do that with same contained message `m`. It is not possible that the faulty processes introduce enough READY messages with a content different from `m`.
+
+Finally, the amplification step from `f + 1` to `2f + 1` READY messages ensures the totality property. If some correct process bcr-delivers some `m`, then at least `f + 1` correct processes must have al-sent a READY message containing `m`. As these processes are correct, every correct process eventually al-sends a READY message with `m` by the amplification step or after receiving enough ECHO messages. In either case, every correct process eventually bcr-delivers `m`.
