@@ -438,7 +438,7 @@ In the consensus problem, processes propose values and have to agree on one of t
 1. Validity: Any value decided is a value proposed
 2. Agreement: No two correct processes decide differently
 3. Termination: Every correct process eventually decides
-4. Integrity: No process decides twice
+4. Integrity: No process decides more than once
 
 ### Algorithm - Hierarchical Consensus
 
@@ -619,19 +619,19 @@ Let `Ci` denote a bivalent configuration and a message (p, m) in the message poo
 1. The last step of the sequence is the delivery of (p, m)
 2. The end of the sequence `Ci+1` is a bivalent configuration.
 
-Case 1: Delivering leads to a bivalent configurations, trivial case.
+Let `C` be a configuration reachable from `Ci` via the delivery of a sequence of messages different from (p, m). The configuration is:
 
-Case 2: Delivering leads to a 0-valent (without loss of generality) configuration.
+1. 0*-configuration: delivering (p,m) at `C` leads to a 0-valent configuration
+2. 1*-configuration: delivering (p,m) at `C` leads to a 1-valent configuration
+3. bivalent*-configuration: delivering (p,m) at `C` leads to a bivalent configuration
 
-Let `Ci+1` be a configuration reachable from `Ci` via the delivery of a sequence of messages different from (p, m). The configuration is:
+If `Ci` is a bivalent*-configuration, then the proof is trivial (just deliver (p,m)).
 
-1. 0*-configuration: delivering (p,m) at `Ci+1` leads to a 0-valent configuration
-2. 1*-configuration: delivering (p,m) at `Ci+1` leads to a 1-valent configuration
-3. bivalent*-configuration: delivering (p,m) at `Ci+1` leads to a bivalent configuration
+Therefore, without loss of generality,`Ci` is a 0*-configuration. Now, we want to prove that starting from `Ci` there exists a non-0*-configuration. If there isn't a non 0*-configuration, then delivering (p, m) at every configuration will lead to a 0-valent configuration. This means that only deciding 0 is possible from `Ci`, which then means `Ci` is 0-valent (which is a contradiction).
 
-Therefore, `Ci` is a 0*-configuration. Now, we want to prove that starting from `Ci` there exists a non-0*-configuration.
+If that configuration is bivalent*, then we have proved that there existss a bivalent configuration (trivial case).
 
-If that configuration is bivalent*, then we have proved that there existss a bivalent configuration. Therefore, the configurations must be 1* configuration. Let that configuration be `Y`, and the 0* configuration before it `X` (the same argument that this transition exists that we used in lemma 1). By delivering (p', m') from `X` we end up in `Y`.
+Therefore, that configuration must be a 1*-configuration. Let that configuration be `Y`, and the 0* configuration before it `X` (the same argument that this transition exists that we used in lemma 1). By delivering (p', m') from `X` we end up in `Y`.
 
 Because `X` is a 0* configuration, when we deliver (p,m) we end up in a 0-valent conviguration, and now when we deliver (p',m') we must still be in a 0-valent configuration - `V`.
 
@@ -673,8 +673,7 @@ Uses:
     Conensus (cons)
 
 upon event <Init> do
-    prop := nil
-    correct := S;
+    prop := nil;
 
 upon event <trbBroadcast, m> do
     trigger <bebBroadcast, m>;
@@ -1272,12 +1271,12 @@ upon event <bcb, Init> do
 
 upon event <bcbBroadcast, m> do // only process s
     forall q ∈ Π do
-    trigger <alSend, q, [SEND, m]>;
+        trigger <alSend, q, [SEND, m]>;
 
 upon event <alDeliver, p, [SEND, m]> such that p = s and sentecho = FALSE do
     sentecho := TRUE;
     forall q ∈ Π do
-    trigger <alSend, q, [ECHO, m]>;
+        trigger <alSend, q, [ECHO, m]>;
 
 upon event <alDeliver, p, [ECHO, m]> do
     if echos[p] = ⊥ then
