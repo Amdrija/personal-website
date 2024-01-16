@@ -712,6 +712,7 @@ Similarly to consensus, every process proposes a value `1` (yes) or `0` (no) and
 2. Termination: Every correct process eventually decides
 3. Commit-Validity: `1` can only be decided if all processes propose `1`
 4. Abort-Validity: `0` can only be decided if some process crashes or proposes `0`.
+5. Integrity: No process decides more than once.
 
 According to these rules, if a process which proposed `1` crashes, then we can decide either `1` or `0`. Which is ok, since that process promised to "commit" the transaction after getting a decision, meaning that it saved details of the transaction to some permanent storage, so that even if it crashes, it can commit the transaction upon restart.
 
@@ -787,7 +788,7 @@ Uses:
 upon event <Init> do
     view := (0, S);
     correct := S;
-    wait := true;
+    wait := false;
 
 upon event <crash, pi> do
     correct := correct \ {pi};
