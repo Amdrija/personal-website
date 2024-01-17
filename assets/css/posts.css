@@ -1,12 +1,13 @@
 .posts-container {
     display: flex;
     gap: 5%;
+    flex-wrap: wrap;
 }
 
 .posts-container a {
     text-align: left;
-    flex: 1 1 30%;
-    margin-bottom: var(--paragraph-margin);
+    flex: 0 1 30%;
+    margin-bottom: calc(2.7 * var(--paragraph-margin));
 }
 
 .posts-container a:hover {
@@ -78,5 +79,10 @@
 @media screen and (max-width: 768px) {
     .post {
         flex: 1 1 100%;
+    }
+
+    .posts-container a {
+        flex: 1 1 100%;
+        margin-bottom: var(--paragraph-margin);
     }
 }

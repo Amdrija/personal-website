@@ -1,16 +1,17 @@
 .projects-container {
     display: flex;
     gap: 5%;
+    flex-wrap: wrap;
 }
 
 .project {
-    flex: 1 1 30%;
+    flex: 0 1 30%;
     border-radius: var(--border-radius);
     position: relative;
     background: var(--background-gray);
     display: flex;
     flex-direction: column;
-    margin-bottom: var(--paragraph-margin);
+    margin-bottom: calc(2.7 * var(--paragraph-margin));
 }
 
 .project::after {
@@ -54,7 +55,7 @@
     margin-bottom: var(--paragraph-margin);
 }
 
-.project-technologies li{
+.project-technologies li {
     display: inline-block;
     padding: 0.5rem 1rem;
     border-radius: var(--border-radius);
@@ -78,5 +79,6 @@
 @media screen and (max-width: 768px) {
     .project {
         flex: 1 1 100%;
+        margin-bottom: var(--paragraph-margin);
     }
 }
