@@ -2,10 +2,10 @@
 title: "Hello World"
 date: 2023-08-28T18:20:44+02:00
 draft: false
-summary: "Hi, I'm Andrija Jelenkovic, a computer enthusiast turned software engineer. I've been thinking of making my own blog for quite some time now, but I have always found some excuses why I shouldn't start. Whether it is actually having more important things to do or just procrastination, but I guess that is no more."
+summary: "Hello World, I'm Andrija Jelenkovic, and this is my blog. I'll mostly be writing about computer science and occasional life experience."
 ---
 
-Hi, I'm Andrija Jelenkovic, a computer enthusiast turned software engineer. I've been thinking of making my own blog for quite some time now, but I have always found some excuses why I shouldn't start. Whether it is actually having more important things to do or just procrastination, but I guess that is no more.
+Hello World, I'm Andrija Jelenkovic, a computer enthusiast turned software engineer. I've been thinking of making my own blog for quite some time now, but I have always found some excuses why I shouldn't start. Whether it is actually having more important things to do or just procrastination, but I guess that is no more.
 
 ## What you can expect
 
