@@ -70,13 +70,13 @@ Safety: A read that is not concurrent with a write returns the last written valu
 
 Regularity: A read that is concurrent with a write returns the value written by that write or the value written by the last preceding write. A regular register ensures regularity and safety. It only supports a single writer.
 
-Read-write inversion: when two consecutive (non-overlapping) reads are concurrent with a write, it is possible for a regular register to return the newely written value on the first read and the previously written value on the second read.
+New-old inversion: when two consecutive (non-overlapping) reads are concurrent with a write, it is possible for a regular register to return the newely written value on the first read and the previously written value on the second read.
 
 ![Regular execution](images/regular-execution.png)
 
 ### Atomic register
 
-Atomicity: An atomic (linearizable) register is one that ensures linearizability. Such a register ensures the safety and regularity properties above, but in addition, prevents the situation of read-write inversion. The second read must succeed the first one in any linearization, and thus must return the same or a "newer" value.
+Atomicity: An atomic (linearizable) register is one that ensures linearizability. Such a register ensures the safety and regularity properties above, but in addition, prevents the situation of new-old inversion. The second read must succeed the first one in any linearization, and thus must return the same or a "newer" value.
 
 ![Atomic execution](images/atomic-execution.png)
 
@@ -88,7 +88,7 @@ We use an array of SRSW registers Reg[1...N], one per reader process.
 
 ```javascript
 Read() {
-    return (Reg[i].read());
+    return Reg[i].read();
 }
 
 Write(v) {
@@ -128,7 +128,7 @@ Since the underlying base register is safe, a read that is not concurrent with a
 
 Now consider a read operation r that overlaps with one or more write operations. If none of these operations change the value of the register, i.e. write to the underlying base safe register `Reg`, we are back to the previous case, as the read of `Reg` performed by r does not overlap with any write on `Reg`.
 
-Now suppose that a concurrent operation changes the value of `Reg`. Thus, the value written by the last write that precedes r is different from the value written by the concurrent write. BUt the range of these values is {0, 1}. SInce the read on the underlying base register returns a value in the range to any read, any of these values are accepted by the regularity conditions. Therefore the high-level register is regular.
+Now suppose that a concurrent operation changes the value of `Reg`. Thus, the value written by the last write that precedes r is different from the value written by the concurrent write. But the range of these values is {0, 1}. Since the read on the underlying base register returns a value in the range to any read, any of these values are accepted by the regularity conditions. Therefore the high-level register is regular.
 
 - Works for single reader registers
 - Doesn't work for multi-valued registers
@@ -138,7 +138,7 @@ Now suppose that a concurrent operation changes the value of `Reg`. Thus, the va
 
 We use an array of MRSW Registers Reg[0 ... M] initialized to [1,0,...,0].
 
-- The value `v` is represented by 0s in registers `1` to `v - 1` and then `1` in register at position `v`.
+- The value `v` is represented by `0`s in registers `1` to `v - 1` and then `1` in register at position `v`.
 
 ```javascript
 Read() {
@@ -165,7 +165,7 @@ Proof Consider first a read operation that is not concurrent with any write, and
 Let us now consider a read operation R. read() that is concurrent with one or more write operations R. write(v1), . . ., R. write(vm) (as depicted in Figure 4.7). Let v0 be the value written by the last write operation that terminated before the operation R. read() starts. For simplicity we assume that each execution begins with a write operation that sets the value of R to an initial value. As a read operation always terminates (Lemma 2), the number of writes concurrent with the R. read() operation is finite. By the algorithm, the read operation finds 0 in REG[1] up to REG[v −1], 1 in REG[v], and then returns v. We are going to show by induction that each of these base-object reads returns a value previously or concurrently written by a write operation in R. write(v0), R. write(v1), . . ., R. write(vm). Since R. write(v0) sets REG[v0] to 1 and REG[v0 − 1] down to REG[1] to 0, the first base-object read performed by the R. read() operation returns the value written by R. write(v0) or a concurrent write. Now suppose that the read on REG[j], for some j = 1, . . . , v − 1, returned 0 written by the latest preceding or a concurrent write operation R. write(vk) (k = 1, . . . , m). Notice that vk > j: otherwise, R. write(vk) would not touch REG[j]. By the algorithm, R. write(vk) has previously set REG[vk] to 1 and REG[vk − 1] down to REG[j + 1] to 0. Thus, since the base registers are regular, the subsequent read of REG[j + 1] performed within the R. read() operation can only return the value written by R. write(vk) or a subsequent write operation that is concurrent with R. read(). By induction, we derive that the read of REG[v] performed within R. read() returns a value written by the latest preceding or a concurrent write.
 
 - Doesn't work for atomic registers.
-  Consider that the register had a value 10, and then the writer did 2 writes w(1) and then w(9). The first read r1 is concurrent with both writes, it missed the first one so it continues to read, but very slowly. Then w(1) completes and the second write w(9) starts and writes a 1 at 9 and starts clearing. The read r1 now manages to find the 1 at 9 and then returns 9. The read r2 starts now and finds a 1 at 1 from w(1) and returns 1. This is read write inversion.
+  Consider that the register had a value `10`, and then the writer did 2 writes `w(1)` and then `w(9)`. The first read `r1` is concurrent with both writes, it missed the first `1` (`Reg[1] = 0`) so it continues to read, but very slowly. Then `w(1)` completes and the second write `w(9)` starts and writes a `1` at `Reg[9]` and starts clearing, but again very slowly. The read `r1` now manages to find the `1` at `Reg[9]` and then returns `9`. The read `r2` starts now and finds a `1` at `Reg[1]` from `w(1)` and returns `1`. This is new-old inversion.
 
 ### From SRSW regular to SRSW atomic
 
@@ -191,9 +191,9 @@ Write(value) {
 ```
 
 Safety: trivial.
-By memorizing the `last_timestamp` and `last_value` in the reader, we can prevent a read inversion, as the first read will update the `last_timestamp` and `last_value`, therefore, when the second read happens, it will read a lower `timestamp` and will just return the `last_value`.
+By memorizing the `last_timestamp` and `last_value` in the reader, we can prevent a new-old inversion, as the first read will update the `last_timestamp` and `last_value`, therefore, when the second read happens, it will read a lower `timestamp` and will just return the `last_value`.
 
-Doesn't work for multiple readers, because the second reader doesn't have the updated `last_timestamp` and `last_value`, therefore, a read inversion could still happen.
+Doesn't work for multiple readers, because the second reader doesn't have the updated `last_timestamp` and `last_value`, therefore, a new-old inversion could still happen.
 
 ### From SRSW atomic to MRSW atomic
 
@@ -279,7 +279,7 @@ Write() {
 
 We need to choose the maximum (or minimum) such k, so that two concurrent write operations don't choose the same sequence number. For example, assume we have two processes which write, p1 and p2. They write concurrently the values `1` and `2` respectively. Because the neither one completes the write operation before the other one reads, the resulting registers look like this: `Reg = [(timestamp: 1, value: 1), (timestamp: 1, value: 2)]`. Now, we have 2 reads which happen sequentially one after another. If we don't impose the ordering, the first read could read the value 1, the second value 2. This would violate safety, as the reads which are not concurrent with a write would have to return the last written value (which should be the same).
 
-With the ordering, it is atomic, because the only case when we can possibly return different values on reads are when maximum timestamp is not unique. However, the ordering property will always force us to pick the same timestamp in this situation, thus we will always return the same value. Therefore, a read write inversion is not possible.
+With the ordering, it is atomic, because the only case when we can possibly return different values on reads are when maximum timestamp is not unique. However, the ordering property will always force us to pick the same timestamp in this situation, thus we will always return the same value. Therefore, a new-old inversion is not possible.
 
 Safety and regularity are trivially satisfied.
 
@@ -309,7 +309,7 @@ Let's say that when writing a 1, the register goes through some kind of a sequen
 
 Let's say that we schedule a long write, and reads to happen inbetween underlying value writes vi and vi + 1 (after vi and before vi + 1). At some point, one of these writes has to cause the reader to read a 1, let the value written before such write be vi (it may happen multiple times, but at least once, otherwise, we would not be able to write anything into the register).
 
-Now, we can schedule two consecutive reads - r1 and r2 to be concurrent to the write vi + 1. Because of the regular property of the underlying registers, both reads can return the previous written value vi or the current value vi + 1. Therefore, r1 can read vi + 1 and then r2 can read vi, causing a read inversion which breaks atomicity.
+Now, we can schedule two consecutive reads - r1 and r2 to be concurrent to the write vi + 1. Because of the regular property of the underlying registers, both reads can return the previous written value vi or the current value vi + 1. Therefore, r1 can read vi + 1 and then r2 can read vi, causing a new-old inversion which breaks atomicity.
 
 ![Impossibility of SRSW](images/impossibility-srsw-vi.png)
 
@@ -343,7 +343,7 @@ MRSW register `atom` initially has `0`. Consider the `atom.Write(1)` operation.
 
 Because the readers have to read `0` before the write and `1` after the write. Therefore, there is some `i`, `j`, `i != j` for which `ri = 0` and `ri+1 = 1`, and, `r'j = 0` and `r'j + 1 = 1`, because `w1, ..., wn` are writes to separate registers (cannot communicate with both readers at the same time).
 
-Let's assume, without loss of generality that `i < j`. Then, if we schedule the reader `r` to read after `i`, then it will have to return `1`. Afterwards, we can schedule the reader `r'` to read, however, because the write was happening to the `r`'s register, then, for the reader `r'` it's as if the write never happened, therefore, it would have to read the value that was before the write, which is `r'i`. Since, the reader's return value changes at `r'j+1`, where `j > i`, therefore, the reader `r'` reads a `0` and we have a read inversion.
+Let's assume, without loss of generality that `i < j`. Then, if we schedule the reader `r` to read after `i`, then it will have to return `1`. Afterwards, we can schedule the reader `r'` to read, however, because the write was happening to the `r`'s register, then, for the reader `r'` it's as if the write never happened, therefore, it would have to read the value that was before the write, which is `r'i`. Since, the reader's return value changes at `r'j+1`, where `j > i`, therefore, the reader `r'` reads a `0` and we have a new-old inversion.
 
 ![Impossibility result MRSW](images/impossibility-mrsw.png)
 
@@ -392,7 +392,7 @@ read() {
 }
 ```
 
-With this implementation, even when we have concurrent `inc()` operations, the processes write to their own register, so it is not possible to have the processes read the same counter value while incrementing. When calling `read()`, it is not possible to have a read inversion, because this would mean that there exists a register `k` such that the first reader read the "newely" incremeneted value, while the second reader read the old value. This is not possible, as the register themselves are atomic.
+With this implementation, even when we have concurrent `inc()` operations, the processes write to their own register, so it is not possible to have the processes read the same counter value while incrementing. When calling `read()`, it is not possible to have a new-old inversion, because this would mean that there exists a register `k` such that the first reader read the "newely" incremeneted value, while the second reader read the old value. This is not possible, as the register themselves are atomic.
 
 ### Snapshot
 
@@ -1047,4 +1047,54 @@ Wait-freedom proof: Suppose that some process `p` never returns from `wInc()`. T
 
 Correctness: Let `r1` and `r2` be the values returned by `op1` and `op2`, where `op1` completes before `op2`. We must show that `r2 > r1`. If `op1` terminates at the end, after writing to `Reg[r1]`, then it must mean that `Reg[r1] = 1` (either `op1` wrote to it, or some other register wrote to it and wrote `r1` to `L` and `op1` terminated early). If `op2` terminates after writing to `Reg[r2] = 1`, then it must meant that `Reg[r2] = 0` at some point (in order to break the loop). If `r2 <= r1`, then when `op2` read from `Reg[r2]` it must have read `1` (because the `1` to `Reg` are written sequentially), but this is a contradiction to `Reg[r2] = 0`. Therefore, in this case `r2 > r1`. If `op2` terminated early, then it has seen the value in `L` change `n` times, so at least 1 process wrote to `L` twice during that time. This means that there is an `op3` which started after `op2` began and terminated after writing to `Reg[r3]` (the second operation of the process). Therefore, `op3` started after `op1` terminated, following the same argument, it must mean that `r3 > r1`. Because `op2` returns the max value, then `r2 >= r3 > r1`.
 
-## Transactional Memory
+### Snapshot
+
+Wait-free implementation: similar to the snapshot with process identifiers. The processes share a Weak Counter initialized to `0` and an array of registers `Reg[1...N]` that each contain:
+
+- a value
+- a timestamp
+- a copy of the entire array of values
+
+To scan, a process keeps collecting and returns a collect if it did not change, or some collect returned by a concurrent scan. Timestamps are used to check if a scan has been taken in the meantime.
+
+To update, a process scans and writes the value, the new timestamp and the result of the scan.
+
+```javascript
+update(i, v) {
+    ts = Wcounter.wInc()
+    Reg[i].write(v, ts, self.scan())
+
+    return ok
+}
+
+scan() {
+    ts = Wcounter.wInc()
+    while (true) {
+        if some Reg[j] contains a collect with a higher timestamp than ts
+            return that collect
+
+        if n + 1 sets of reads gave the same results 
+            return that result
+    }
+}
+```
+
+### Consensus
+
+We are solving binary consensus. The processes share two infinite arrays of registers: `Reg[0][1...i...]` and `Reg[1][1...i...]`. Every process hold and integer `i` initialized to `1`. The main idea is: to impose a value `v`, a process needs to be fast enough to fill in registers `Reg[v][i]`.
+
+```javascript
+propose(v) {
+    while (true) {
+        if Reg[1 - v][i] = 0 {
+            Reg[v] = 1
+            if i > 1 and Reg[1-v][i - 1] = 0 {
+                return v
+            }
+        } else {
+            v = 1 - v
+        }
+        i++
+    }
+}
+```
