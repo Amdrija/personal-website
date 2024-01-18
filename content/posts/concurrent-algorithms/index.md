@@ -698,7 +698,7 @@ propose(value) {
 }
 ```
 
-## Universal Instructions
+## Universal Constructions
 
 A type `T` is universal if, together with registers, instances of `T` can be used to provide a wait-free linearizable implementation of any other type (with a sequential specification).
 
@@ -979,3 +979,72 @@ propose(value) {
     return Dec.read();
 }
 ```
+
+## Computing with anonymous processes
+
+In this model, it is assumed that the process don't have identifiers and cannot identify other processes. This means that every process runs exactly the same code (in previous algorithms, while the algorithms of the processes were the same, each process had a different implementation that accounts for its identifier).
+
+A system is called anonymous if processes are programmed identically.
+
+In such systems it doesn't make sense to use single writer registers, as the usage of single-writer registers would violate total anonymity by giving processes at least some rudimentary sense of identity: processes would know that values written into the same register at different times were produced by the same process.
+
+### Weak Counter
+
+A weak count procides a single operation - `wInc()` which returns an integer. It has the property that if one operation precedes another, the value returned by the later operation must be larger than the value returned by the earlier one (Two concurrent `wInc()` operations may return the same value). Also, the return value does not exceed the number of `wInc()` invocations.
+
+Sequential specification:
+
+```javascript
+wInc() {
+    x = x + 1
+    return x
+}
+```
+
+This is essentially a weaker form of a fetch&increment object.
+Lock-free implementation - The processes share an infinite array of MWMR registers `Reg[1...n...]`, initialized to 0.
+
+```javascript
+wInc() {
+    i = 0
+    while (Reg[i].read != 0) {
+        i++
+    }
+
+    Reg[i].write(1)
+    return i
+}
+```
+
+This implementation is not lock-free, because a process can forever keep reading `0` from `Reg[i]` if there is contention. In order to alleviate this problem, the processes also use a MWMR register `L`. Whenever a process writes a `1` into an entry of `Reg`, it also writes the index of the entry into a shared register `L` (initialized to `0`). A process may terminate early if it sees that `n` writes to `L` have occurred since its invocation. In this case, it returns the largest value it has seen in `L`.
+
+```javascript
+wInc() {
+    max_value = last_value = L.read()
+    i = j = 0
+
+    while (Reg[i].read() != 0) {
+        i++
+        current_value = L.read()
+        if current_value != last_value {
+            last_value = current_value
+            max_value = max(max_value, last_value)
+            j++
+            if j == n {
+                return max_value
+            }
+        }
+    }
+
+    L.write(i)
+    Reg[i].write(1)
+
+    return i
+}
+```
+
+Wait-freedom proof: Suppose that some process `p` never returns from `wInc()`. This must mean that it is stuck in an infinite loop. This means that an infinite number of writes to `L` will occur. Suppose, some process `q` writes a value `i` into `L`. Before doing so, it must write `1` into `Reg[i]`. Thus, any subsequent invocation of `wInc()` by `q` will never see `Reg[i] == 0`. Therefore, `q` can never again write `i` to `L` (because it will always read `1` from `L` and continue to search for the next `i` such that `Reg[i] = 0`). Thus, `p`'s operation will eventually see `n` different values in `L` and terminate, contrary to the assumption.
+
+Correctness: Let `r1` and `r2` be the values returned by `op1` and `op2`, where `op1` completes before `op2`. We must show that `r2 > r1`. If `op1` terminates at the end, after writing to `Reg[r1]`, then it must mean that `Reg[r1] = 1` (either `op1` wrote to it, or some other register wrote to it and wrote `r1` to `L` and `op1` terminated early). If `op2` terminates after writing to `Reg[r2] = 1`, then it must meant that `Reg[r2] = 0` at some point (in order to break the loop). If `r2 <= r1`, then when `op2` read from `Reg[r2]` it must have read `1` (because the `1` to `Reg` are written sequentially), but this is a contradiction to `Reg[r2] = 0`. Therefore, in this case `r2 > r1`. If `op2` terminated early, then it has seen the value in `L` change `n` times, so at least 1 process wrote to `L` twice during that time. This means that there is an `op3` which started after `op2` began and terminated after writing to `Reg[r3]` (the second operation of the process). Therefore, `op3` started after `op1` terminated, following the same argument, it must mean that `r3 > r1`. Because `op2` returns the max value, then `r2 >= r3 > r1`.
+
+## Transactional Memory
