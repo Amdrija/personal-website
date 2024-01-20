@@ -220,16 +220,16 @@ Write(value) {
 
 This will not be atomic. Consider 3 processes, pw - writer process, p1 - reader process and p10 - reader process. The writer starts writing a value `x` to the register and overwrites the `Reg[1]`. Concurrent to the write, p1 reads and returns the new value `x`, but the writer still hasn't managed to overwrite the `Reg[10]`, so when the p10 reads, it will return the old value. This unfortunately violates atomicity as `Reg[10]` would have to return the new value `x` as well.
 
-In order to make this atomic, we will need to have communication between each two readers, by using the atomic SRSW registers. Thus, we would need N2 registers. In `ReadReg[i][j]`, the reader is pi and the writer is pj.
+In order to make this atomic, we will need to have communication between each two readers, by using the atomic SRSW registers. Thus, we would need N^2 registers. In `ReadReg[i][j]`, the reader is pi and the writer is pj.
 
 ```javascript
 Read() {
     for j in range(1, N) {
-        (timestamp[j], value[j]) = ReadReg[i][j].read();
+        (timestamps[j], values[j]) = ReadReg[i][j].read();
     }
 
-    (timestamp[0], value[0]) = WriteReg[i].read();
-    (timestmap, value) = (timestamp[k], value[k]) where timestamp[k] = max(timestamp);
+    (timestamps[0], values[0]) = WriteReg[i].read();
+    (timestmap, value) = (timestamps[k], values[k]) where timestamps[k] = max(timestamps);
 
     for j in range(1,N) {
         ReadReg[j][i].write(value, timestamp);
@@ -257,19 +257,19 @@ We use N MRSW atomic registers, the writer of `Reg[i]` is pi.
 ```javascript
 Read() {
     for j in range(1,N) {
-        (timestamp[j], value[j]) = Reg[j].read();
+        (timestamps[j], values[j]) = Reg[j].read();
     }
-    (timestamp, value) = (timestamp[k], value[k]) where timestamp[k] = max(timestamp) and k is max;
+    (timestamp, value) = (timestamps[k], values[k]) where timestamps[k] = max(timestamps) and k is max;
 
     return value;
 }
 
-Write() {
+Write(value) {
     for j in range(1,N) {
-        (timestamp[j],value[j]) = Reg[j].read();
+        (timestamps[j],values[j]) = Reg[j].read();
     }
 
-    (timestamp, value) = (timestamp[k], value[k]) where timestamp[k] = max(timestamp);
+    (timestamp, _) = (timestamps[k], values[k]) where timestamps[k] = max(timestamps);
 
 
     timestamp = timestamp + 1;
@@ -343,7 +343,7 @@ MRSW register `atom` initially has `0`. Consider the `atom.Write(1)` operation.
 
 Because the readers have to read `0` before the write and `1` after the write. Therefore, there is some `i`, `j`, `i != j` for which `ri = 0` and `ri+1 = 1`, and, `r'j = 0` and `r'j + 1 = 1`, because `w1, ..., wn` are writes to separate registers (cannot communicate with both readers at the same time).
 
-Let's assume, without loss of generality that `i < j`. Then, if we schedule the reader `r` to read after `i`, then it will have to return `1`. Afterwards, we can schedule the reader `r'` to read, however, because the write was happening to the `r`'s register, then, for the reader `r'` it's as if the write never happened, therefore, it would have to read the value that was before the write, which is `r'i`. Since, the reader's return value changes at `r'j+1`, where `j > i`, therefore, the reader `r'` reads a `0` and we have a new-old inversion.
+Let's assume, without loss of generality that `i < j`. Then, if we schedule the reader `r` to read after `i + 1`, then it will have to return `1`. Afterwards, we can schedule the reader `r'` to read, however, because the write was happening to the `r`'s register, then, for the reader `r'` it's as if the write never happened, therefore, it would have to read the value that was before the write, which is `r'i`. Since, the reader's return value changes at `r'j+1`, where `j > i`, therefore, the reader `r'` reads a `0` and we have a new-old inversion.
 
 ![Impossibility result MRSW](images/impossibility-mrsw.png)
 
@@ -365,7 +365,7 @@ read() {
 }
 
 inc() {
-    temp:= Reg.read() + 1;
+    temp = Reg.read() + 1;
     Reg.write(temp);
     
     return ok;
@@ -432,7 +432,7 @@ The problem with this implementation is that it is possible for a slow read to r
 
 ![Naive snapshot counter example](images/power-registers-naive-snapstho.png)
 
-In order to implement an atomic snapshot, we will first implement an operation `collect`, which returns, for ever index of the snapshot, the last written values or the value of any concurrent update (the same as the `scan` operation in naive implementation).
+In order to implement an atomic snapshot, we will first implement an operation `collect`, which returns, for every index of the snapshot, the last written values or the value of any concurrent update (the same as the `scan` operation in naive implementation).
 
 Now, in order to successfully `scan`, the process keeps calling `collect` until two consecutive results are the same. This means that the snapshot did not change and it is safe to return without violating atomicity.
 
@@ -483,7 +483,7 @@ To `scan`, a process keeps collecting and returns a `collect` if it did not chan
 To `update`, a process calls `scan` and writes the value, the new timestamp and the result of the `scan`.
 
 ```javascript
-update(i, value) {
+update(value) {
     timestamp = timestamp + 1;
     Reg[i].write(value, timestamp, this.scan());
 
@@ -497,7 +497,7 @@ scan() {
     while (true) {
         t3 = this.collect();
         if (t3 == t2) {
-            return t3.value;
+            return t3.array;
         }
 
         for j in range(1, N) {
@@ -539,7 +539,7 @@ A step is an elementary action executed by some process `pl`: it consists in rea
 
 A schedule S is a sequence of steps; S(C) denotes the configurations that results from applying S to C. In an asynchronous environment, there are no constraints on the schedules (i.e any sequence of steps is a valid schedule).
 
-A configuration C is 0-valent if, starting from C, no matter how the processes behave, no decision other than 0 is possible. Similarly for 0-valent configuration. If a configuration isn't 1-valent or 0-valent, then it is bivalent.
+A configuration C is 0-valent if, starting from C, no matter how the processes behave, no decision other than 0 is possible. Similarly for 1-valent configuration. If a configuration isn't 1-valent or 0-valent, then it is bivalent.
 
 Lemma 1: there is at least one initial bivalent configuration
 
@@ -808,7 +808,7 @@ The processes share an array of register pairs `Reg[1,...,N]` where each element
 - `Reg[i].T` contains a timestamp (init to `0`)
 - `Reg[i].V` contains a pair `(value, timestamp)` (init to `(null, 0)`)
 
-The function `highestTsp()` returns the highest timestamp amon all elements `Reg[1,...,N].T`.
+The function `highestTsp()` returns the highest timestamp among all elements `Reg[1,...,N].T`.
 
 The function `highestTspValue()` returns the value with the highest timestamp among all elements `Reg[1,...,N].V`.
 
@@ -846,7 +846,7 @@ One operation `leader()` which does not take any input parameter and returns a b
 If a correct process invokes `leader()`, then the invocation returns and eventually, some correct process is permanently the only leader.
 
 For the `leader()` to be implemented, we must assume an eventually synchronous system. There is a time after which there is a lower and an
-upper bound on the delay for a process to execute a local action, a read or a write in shared memory. he time after which the system becomes synchronous is called the global stabilization time (GST) and is unknown to the processes.
+upper bound on the delay for a process to execute a local action, a read or a write in shared memory. The time after which the system becomes synchronous is called the global stabilization time (GST) and is unknown to the processes.
 
 This model captures the practical observation that distributed systems are usually synchronous and sometimes asynchronous.
 
@@ -860,7 +860,7 @@ leader() {
     return leader == self;
 }
 
-//this tusk is running all the time in the background
+//this task is running all the time in the background
 background_task() {
     clock = 0;
     while (true) {
@@ -1016,7 +1016,7 @@ wInc() {
 }
 ```
 
-This implementation is not lock-free, because a process can forever keep reading `0` from `Reg[i]` if there is contention. In order to alleviate this problem, the processes also use a MWMR register `L`. Whenever a process writes a `1` into an entry of `Reg`, it also writes the index of the entry into a shared register `L` (initialized to `0`). A process may terminate early if it sees that `n` writes to `L` have occurred since its invocation. In this case, it returns the largest value it has seen in `L`.
+This implementation is not wait-free, because a process can forever keep reading `0` from `Reg[i]` if there is contention. In order to alleviate this problem, the processes also use a MWMR register `L`. Whenever a process writes a `1` into an entry of `Reg`, it also writes the index of the entry into a shared register `L` (initialized to `0`). A process may terminate early if it sees that `n` writes to `L` have occurred since its invocation. In this case, it returns the largest value it has seen in `L`.
 
 ```javascript
 wInc() {
@@ -1045,7 +1045,7 @@ wInc() {
 
 Wait-freedom proof: Suppose that some process `p` never returns from `wInc()`. This must mean that it is stuck in an infinite loop. This means that an infinite number of writes to `L` will occur. Suppose, some process `q` writes a value `i` into `L`. Before doing so, it must write `1` into `Reg[i]`. Thus, any subsequent invocation of `wInc()` by `q` will never see `Reg[i] == 0`. Therefore, `q` can never again write `i` to `L` (because it will always read `1` from `L` and continue to search for the next `i` such that `Reg[i] = 0`). Thus, `p`'s operation will eventually see `n` different values in `L` and terminate, contrary to the assumption.
 
-Correctness: Let `r1` and `r2` be the values returned by `op1` and `op2`, where `op1` completes before `op2`. We must show that `r2 > r1`. If `op1` terminates at the end, after writing to `Reg[r1]`, then it must mean that `Reg[r1] = 1` (either `op1` wrote to it, or some other register wrote to it and wrote `r1` to `L` and `op1` terminated early). If `op2` terminates after writing to `Reg[r2] = 1`, then it must meant that `Reg[r2] = 0` at some point (in order to break the loop). If `r2 <= r1`, then when `op2` read from `Reg[r2]` it must have read `1` (because the `1` to `Reg` are written sequentially), but this is a contradiction to `Reg[r2] = 0`. Therefore, in this case `r2 > r1`. If `op2` terminated early, then it has seen the value in `L` change `n` times, so at least 1 process wrote to `L` twice during that time. This means that there is an `op3` which started after `op2` began and terminated after writing to `Reg[r3]` (the second operation of the process). Therefore, `op3` started after `op1` terminated, following the same argument, it must mean that `r3 > r1`. Because `op2` returns the max value, then `r2 >= r3 > r1`.
+Correctness: Let `r1` and `r2` be the values returned by `op1` and `op2`, where `op1` completes before `op2`. We must show that `r2 > r1`. If `op1` terminates, then it must mean that `Reg[r1] = 1` (either `op1` wrote to it, or some other register wrote to it and wrote `r1` to `L` and `op1` terminated early). If `op2` terminates after writing to `Reg[r2] = 1`, then it must meant that `Reg[r2] = 0` at some point (in order to break the loop). If `r2 <= r1`, then when `op2` read from `Reg[r2]` it must have read `1` (because the `1` to `Reg` are written sequentially), but this is a contradiction to `Reg[r2] = 0`. Therefore, in this case `r2 > r1`. If `op2` terminated early, then it has seen the value in `L` change `n` times, so at least 1 process wrote to `L` twice during that time. This means that there is an `op3` which started after `op2` began and terminated after writing to `Reg[r3]` (the second operation of the process). Therefore, `op3` started after `op1` terminated, following the same argument, it must mean that `r3 > r1`. Because `op2` returns the max value, then `r2 >= r3 > r1`.
 
 ### Snapshot
 
@@ -1087,7 +1087,7 @@ We are solving binary consensus. The processes share two infinite arrays of regi
 propose(v) {
     while (true) {
         if Reg[1 - v][i] = 0 {
-            Reg[v] = 1
+            Reg[v][i] = 1
             if i > 1 and Reg[1-v][i - 1] = 0 {
                 return v
             }
