@@ -551,7 +551,7 @@ Proof: Let S be the schedule with the maximum length such as D = S(C) is bivalen
 
 To go from D to p0(D), p0 cannot read R, otherwise R has the same state in D and in p0(D). In this case, the registers and p1 have the same state in p1(p0(D)) and p1(D) (because p0 just reads R and doesn't write to it to communicate to `p1`). If `p1` is the only one executing steps, then `p1` eventually decides `1` in both cases, which is a contradiction with the fact that p0(D) is 0-valent. Similarly, `p1` cannot read R to go from D to p1(D).
 
-Thus both `p0` and `p1` write in R to go from D to p0(D), however, in that case p0(p1(D)) = p0(D) (because they overwrite each other). If `p0` is the only one executing steps, then `p0` eventually decides `0`, which is a contradiction to the 1-valencyu of p1(D). Analogous p1(p0(D)) = p0(D), which is also a contradiction.
+Thus both `p0` and `p1` write in R to go from D to p0(D), however, in that case p0(p1(D)) = p0(D) (because they overwrite each other). If `p0` is the only one executing steps, then `p0` eventually decides `0`, which is a contradiction to the 1-valency of p1(D). Analogous p1(p0(D)) = p0(D), which is also a contradiction.
 
 By using lemmas 1 and 2, there exists a bivalent initial configuration C and an infinite schedule S such that, for any prefix S' of S, S'(C) is bivalent. In an infinite schedule S, at least one process executes an infinite number of steps and does not decide, which is a contradiction to the termination property of A.
 
@@ -816,14 +816,14 @@ The function `highestTspValue()` returns the value with the highest timestamp am
 propose(value) {
     while(true) {
         Reg[i].T.write(ts);
-        val = Reg[1..N].highestTspValue();
+        val = Reg[1..N].V.highestTspValue();
         if val == null {
             val = value;
         }
 
         Reg[i].V.write(val, ts);
         
-        if ts == Reg[1..N].highestTsp() {
+        if ts == Reg[1..N].T.highestTsp() {
             return val;
         }
 
