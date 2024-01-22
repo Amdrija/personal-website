@@ -303,7 +303,7 @@ Without loss of generality, we can assume:
 Adverserial example:
 Writer alternates between writing `0` and `1` on the atomic register infinite times.
 
-The implementing algorithm uses finite number of registers - `M`, each holding `0` or `1`, which means there are 2M different values. Say that in the given sequence, each different value written to the underlying register is written at most `X` times, that means that there are `2^M* X` writes, which is not possible since there are infinite number of writes. Hence, when a `Write(0)` occurs, there has to be a value v0 which occurs an infinite amount of times. Similarly, there has to be a value vn which occurs an infinite amount of times when doing a `Write(1)` operation.
+The implementing algorithm uses finite number of registers - `M`, each holding `0` or `1`, which means there are `2^M` different values. Say that in the given sequence, each different value written to the underlying register is written at most `X` times, that means that there are `2^M* X` writes, which is not possible since there are infinite number of writes. Hence, when a `Write(0)` occurs, there has to be a value v0 which occurs an infinite amount of times. Similarly, there has to be a value vn which occurs an infinite amount of times when doing a `Write(1)` operation.
 
 Let's say that when writing a 1, the register goes through some kind of a sequence of values from v0 to vn. This sequence might not be the same every time, however, analogous to the previous argument, there will have to be some sequence of value changes from such that it repeats infinitely often (as otherwise we would have to have an infinite number of written values, but the registers are bounded) - let that sequence be v0, v1, ... , vn.
 
