@@ -814,6 +814,7 @@ The function `highestTspValue()` returns the value with the highest timestamp am
 
 ```javascript
 propose(value) {
+    ts = i;
     while(true) {
         Reg[i].T.write(ts);
         val = Reg[1..N].V.highestTspValue();
@@ -925,6 +926,7 @@ The idea is to use an eventual leader to make sure that, eventually, one process
 
 ```javascript
 propose(value) {
+    ts = i
     while(true) {
         if leader() {
             Reg[i].T.write(ts);
@@ -956,6 +958,7 @@ To solve the problem of lock-free consensus, instead of deciding, the leader wil
 
 ```javascript
 propose(value) {
+    ts = i
     while(Dec.read() != null) {
         if leader() {
             Reg[i].T.write(ts);
@@ -1045,7 +1048,7 @@ wInc() {
 
 Wait-freedom proof: Suppose that some process `p` never returns from `wInc()`. This must mean that it is stuck in an infinite loop. This means that an infinite number of writes to `L` will occur. Suppose, some process `q` writes a value `i` into `L`. Before doing so, it must write `1` into `Reg[i]`. Thus, any subsequent invocation of `wInc()` by `q` will never see `Reg[i] == 0`. Therefore, `q` can never again write `i` to `L` (because it will always read `1` from `L` and continue to search for the next `i` such that `Reg[i] = 0`). Thus, `p`'s operation will eventually see `n` different values in `L` and terminate, contrary to the assumption.
 
-Correctness: Let `r1` and `r2` be the values returned by `op1` and `op2`, where `op1` completes before `op2`. We must show that `r2 > r1`. If `op1` terminates, then it must mean that `Reg[r1] = 1` (either `op1` wrote to it, or some other register wrote to it and wrote `r1` to `L` and `op1` terminated early). If `op2` terminates after writing to `Reg[r2] = 1`, then it must meant that `Reg[r2] = 0` at some point (in order to break the loop). If `r2 <= r1`, then when `op2` read from `Reg[r2]` it must have read `1` (because the `1` to `Reg` are written sequentially), but this is a contradiction to `Reg[r2] = 0`. Therefore, in this case `r2 > r1`. If `op2` terminated early, then it has seen the value in `L` change `n` times, so at least 1 process wrote to `L` twice during that time. This means that there is an `op3` which started after `op2` began and terminated after writing to `Reg[r3]` (the second operation of the process). Therefore, `op3` started after `op1` terminated, following the same argument, it must mean that `r3 > r1`. Because `op2` returns the max value, then `r2 >= r3 > r1`.
+Correctness: Let `r1` and `r2` be the values returned by `op1` and `op2`, where `op1` completes before `op2`. We must show that `r2 > r1`. If `op1` terminates, then it must mean that `Reg[r1] = 1` (either `op1` wrote to it, or some other register wrote to it and wrote `r1` to `L` and `op1` terminated early). If `op2` terminates after writing to `Reg[r2] = 1`, then it must meant that `Reg[r2] = 0` at some point (in order to break the loop). If `r2 <= r1`, then when `op1` read from `Reg[r2]` it must have read `1` (because the `1` to `Reg` are written sequentially), but this is a contradiction to `Reg[r2] = 0`. Therefore, in this case `r2 > r1`. If `op2` terminated early, then it has seen the value in `L` change `n` times, so at least 1 process wrote to `L` twice during that time. This means that there is an `op3` which started after `op2` began and terminated after writing to `Reg[r3]` (the second operation of the process). Therefore, `op3` started after `op1` terminated, following the same argument, it must mean that `r3 > r1`. Because `op2` returns the max value, then `r2 >= r3 > r1`.
 
 ### Snapshot
 
@@ -1085,6 +1088,7 @@ We are solving binary consensus. The processes share two infinite arrays of regi
 
 ```javascript
 propose(v) {
+    i = 0
     while (true) {
         if Reg[1 - v][i] = 0 {
             Reg[v][i] = 1
