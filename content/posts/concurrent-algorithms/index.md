@@ -5,7 +5,7 @@ draft: false
 summary: "With the increase of availability of multi-core hardware, it has become vital to understand concurrent algorithms in order to fully exploit the capabilities of the machines. This course teaches exactly that."
 ---
 
-These are my lecture notes and comments for the [Concurrent Computiong](https://edu.epfl.ch/studyplan/en/master/computer-science/coursebook/concurrent-computing-CS-453) course at EPFL. The reference for these notes are prof. Rachid Guerraoui’s lectures and his book [Algorithms for Concurrent Systems](https://www.amazon.com/Algorithms-for-concurrent-systems/dp/2889152839). I have tried to reformulate some proofs in order to better understand the subject. This post deals with more advanced topics than locking, it's main concern is to implement wait-free concurrent algorithms.
+These are my lecture notes and comments for the [Concurrent Computing](https://edu.epfl.ch/studyplan/en/master/computer-science/coursebook/concurrent-computing-CS-453) course at EPFL. The reference for these notes are prof. Rachid Guerraoui’s lectures and his book [Algorithms for Concurrent Systems](https://www.amazon.com/Algorithms-for-concurrent-systems/dp/2889152839). I have tried to reformulate some proofs in order to better understand the subject. This post deals with more advanced topics than locking, it's main concern is to implement wait-free concurrent algorithms.
 
 ## Assumptions
 
@@ -1039,8 +1039,8 @@ wInc() {
         }
     }
 
-    L.write(i)
     Reg[i].write(1)
+    L.write(i)
 
     return i
 }
