@@ -10,6 +10,6 @@
         "React"
     ],
     "date": "2022-07-14T09:00:00+02:00",
-    "liveLink": "https://budget.jelenkovic.xyz",
+    "liveLink": "https://budget.andrija.rs",
     "github": "https://github.com/Amdrija/BudgetApp"
 }

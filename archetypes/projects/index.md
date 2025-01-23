@@ -10,6 +10,6 @@
         ".NET"
     ],
     "date": {{ .Date }},
-    "liveLink": "https://jelenkovic.xyz",
+    "liveLink": "https://andrija.rs",
     "github": "https://github.com/Amdrija"
 }

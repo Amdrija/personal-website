@@ -8,6 +8,6 @@
         "CSS"
     ],
     "date": "2023-05-31T09:00:00+02:00",
-    "liveLink": "https://aircrashes.jelenkovic.xyz",
+    "liveLink": "https://aircrashes.andrija.rs",
     "github": "https://github.com/com-480-data-visualization/project-2023-black-lotus"
 }
