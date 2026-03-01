@@ -115,7 +115,11 @@ Once you understand this, it is not hard to come up with a solution to the probl
 fn add(store: KVStore, delta: u64) {
     loop {
         let old_value = store.read("COUNTER");
-        let result = store.compare_and_swap("COUNTER", old_value, old_value + delta);
+        let result = store.compare_and_swap(
+            "COUNTER", 
+            old_value, 
+            old_value + delta,
+        );
         if result.is_ok() {
             break;
         }
@@ -182,7 +186,11 @@ The solution the author expects is to put a CAS in the read operation to force t
 fn add(store: KVStore, delta: u64) {
     loop {
         let old_value = store.read("COUNTER");
-        let result = store.compare_and_swap("COUNTER", old_value, old_value + delta);
+        let result = store.compare_and_swap(
+            "COUNTER", 
+            old_value, 
+            old_value + delta
+        );
         if result.is_ok() {
             break;
         }
@@ -190,7 +198,11 @@ fn add(store: KVStore, delta: u64) {
 }
 
 fn read(store: KVStore) -> u64 {
-    while let Err(_) = store.compare_and_swap(random::new_key(), 0, random::new_value()) {}
+    while let Err(_) = store.compare_and_swap(
+        random::new_key(), 
+        0, 
+        random::new_value()
+    ) {}
     store.read("COUNTER")
 }
 ```
